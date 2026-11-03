@@ -85,7 +85,6 @@ main() {
   fi
   printf '\n%s\n' "Installed Mac Notch v${version} at: $dest" \
     'Open Mac Notch from your user Applications folder when ready.' \
-    'If Token Monitor is running, quit one of the apps to avoid duplicate notches.' \
     'This build is ad-hoc signed, not Apple notarized. Gatekeeper may block opening.' \
     'System security settings were not changed.'
 }

@@ -4,8 +4,6 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 
 **[产品官网与交互演示](https://a1014709897-sketch.github.io/mac-notch/)** · **[下载](https://github.com/a1014709897-sketch/mac-notch/releases/latest)**
 
-> v0.1.0：独立提取版。原型来自 Token Monitor 的本地定制；此仓库具有独立入口、配置目录与构建流程。没有 Token 历史账单、同步服务器或多供应商仪表盘。
-
 ## 预览
 
 以下为独立应用的窗口截图，使用演示数据。黑色中央区域为真实硬件摄像头预留位置。
@@ -50,8 +48,6 @@ node node_modules/electron/install.js
 npm run verify
 npm start
 ```
-
-无需 Token Monitor，也不会读取其配置。第一次与已安装的 Token Monitor 同时运行会出现两套刘海/菜单栏项目；请在使用时退出其中一套。
 
 ```sh
 npm run smoke          # 九种窗口状态与图标资源检查
