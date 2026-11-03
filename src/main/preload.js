@@ -1,0 +1,15 @@
+"use strict";
+const { contextBridge, ipcRenderer } = require("electron");
+contextBridge.exposeInMainWorld("macNotch", {
+  get: () => ipcRenderer.invoke("state:get"),
+  onState: (callback) =>
+    ipcRenderer.on("state", (_event, state) => callback(state)),
+  onNotice: (callback) =>
+    ipcRenderer.on("notice", (_event, text) => callback(text)),
+  open: (provider) => ipcRenderer.send("tool:open", provider),
+  panel: () => ipcRenderer.send("panel:toggle"),
+  refresh: () => ipcRenderer.send("quota:refresh"),
+  save: (value) => ipcRenderer.invoke("settings:save", value),
+  quit: () => ipcRenderer.send("app:quit"),
+  demo: (state) => ipcRenderer.send("demo:set", state),
+});

@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/Javis603/token-monitor",
+  "baseCommit": "39019803320d5a873c26e848e633528ad7019a59",
+  "note": "Includes local modifications developed in this project session. Not a pristine upstream snapshot.",
+  "files": {
+    "src/electron/notch/desktopCompletion.js": "0d2d8df3ee191e1d05230fcf73f4056b2142dc5597bdc06bac814c40038f3754",
+    "src/electron/notch/screen.js": "2c18a462724b92b0b25e5c41320e658ca01153b74d114fe9e15f8f5061b6f321",
+    "src/electron/notch/taskAttention.js": "7c5c30c4c1703f121ddf396df668834fe5ee566ef94adbddc1dbfe28484cc4ae",
+    "src/shared/providers/codex/sessionContext.js": "639c79dcbd704ae025baacf97f8a353374824966d5a72f4bee404b939e33e352",
+    "src/shared/providers/codex/transcript.js": "daf45fab9a2713ed195bf886d75b524804ab5babbb6c4ae8124c957205409fc2",
+    "src/shared/providers/dsh/paths.js": "7490cece793df867d5543767a872930c5166efdbfb9869dbb96693b928155b96",
+    "src/shared/providers/dsh/sessionFiles.js": "f4044b8d07ade271942dbf5d4de871e5846bdcd2964e232991c16b80a8e7495e",
+    "src/shared/sessionActivityProviders.js": "41a5ddf96d6115f04157d46865fa2aa0bafa601759c053418a867ffa2bf6759d",
+    "src/shared/sessionContext.js": "48e4f6e3d1f763e79fe863a71dd713d29b94618653e2db7aa5164820580a9d0d",
+    "src/shared/sessionLive.js": "6447a8240dc1cae255ff29fd264a4b0792c921679b08ead20c3760b2c13886a7"
+  }
+}

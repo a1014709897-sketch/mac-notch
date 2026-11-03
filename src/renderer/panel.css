@@ -1,0 +1,134 @@
+:root {
+  color-scheme: dark;
+  font: 12px/1.5 system-ui;
+  color: #e6eaf0;
+  background: #11151c;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #29313e;
+}
+strong {
+  font-size: 17px;
+  letter-spacing: -0.3px;
+}
+header small {
+  display: block;
+  color: #8794a7;
+}
+main {
+  padding: 14px 18px;
+}
+button {
+  font: inherit;
+  color: #dfe8f4;
+  background: #222c3a;
+  border: 1px solid #34445a;
+  border-radius: 7px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+button:hover {
+  background: #2e3b4d;
+}
+header button {
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+}
+article {
+  margin: 0 0 12px;
+  padding: 12px;
+  background: #1a212c;
+  border: 1px solid #2d3644;
+  border-radius: 12px;
+}
+article h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+article img {
+  width: 20px;
+  height: 20px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+.row span {
+  color: #a8b3c3;
+}
+progress {
+  width: 100%;
+  height: 5px;
+  accent-color: #83cbb2;
+}
+small,
+.muted {
+  color: #9ca7b7;
+  font-size: 10px;
+}
+.error {
+  color: #dfbb8b;
+  font-size: 11px;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+.actions span {
+  font-size: 10px;
+  color: #8e9bae;
+}
+details {
+  border-top: 1px solid #303946;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+summary {
+  cursor: pointer;
+}
+label {
+  display: block;
+  margin: 10px 0 3px;
+}
+input:not([type="checkbox"]) {
+  width: 100%;
+  padding: 7px 9px;
+  margin-top: 5px;
+  border: 1px solid #39485e;
+  border-radius: 6px;
+  background: #0d121a;
+  color: #e6eaf0;
+}
+p {
+  font-size: 11px;
+  color: #a0acbd;
+}
+#notice {
+  color: #dfbb8b;
+  min-height: 16px;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  font-size: 10px;
+  color: #8490a1;
+}
