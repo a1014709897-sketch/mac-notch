@@ -25,6 +25,7 @@ flowchart LR
 - `src/main/state.js`：会话级状态机、独立多任务批次、部分完成统计与活动过期。提醒消除仍逐条使用 provider + session ID；具体会话已读或该工具持续前台访问都可触发。
 - `src/main/quotas.js`：有限厂商域名的只读额度请求；不启动 CLI 探测、不刷新厂商令牌。状态请求与额度请求独立，扫描不会触发频繁联网。
 - `src/main/index.js`：刘海收起/展开的同一窗口、居中设置窗口和菜单栏生命周期、1 秒前台与会话已读检测、显示器/锁屏处理、IPC 所有者验证。
+- `src/main/tool-launcher.js`：工具和会话打开共用白名单启动入口，统一接住同步/异步执行失败，10 秒超时；请求去重和全局提示限频，不输出底层错误或会话 URL。仅返回成功/失败，提醒和已查看状态仍由调用方处理。
 - `src/main/store.js`：独立 `Mac Notch/settings.json`，手工凭据使用 safeStorage 加密；public DTO 不包含密钥。
 - `src/main/layout.js`：从 AppKit safeArea 得到硬件摄像头区域；普通状态使用基础翼宽，多任务计数按需扩宽两侧。通知与用量面板在同一窗口中展开，保留摄像头区域。
 <!--

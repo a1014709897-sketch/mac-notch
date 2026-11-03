@@ -11,10 +11,14 @@ const {
   session,
   powerMonitor,
   shell,
+  dialog,
 } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
-const { execFile } = require("node:child_process");
+const { createToolLauncher } = require("./tool-launcher");
+const launchTool = createToolLauncher({
+  showMessageBox: (options) => dialog.showMessageBox(options),
+});
 const { TaskState, PROVIDERS } = require("./state");
 const { readActivity } = require("./activity");
 const { readQuota, remaining } = require("./quotas");
@@ -80,10 +84,6 @@ const state = new TaskState(),
 let quotas = {
   claude: { provider: "claude", windows: [], error: "尚未刷新" },
   codex: { provider: "codex", windows: [], error: "尚未刷新" },
-};
-const bundles = {
-  claude: "com.anthropic.claudefordesktop",
-  codex: "com.openai.codex",
 };
 const file = (name) => path.join(__dirname, "../renderer", name);
 function payload() {
@@ -200,7 +200,7 @@ function acknowledgeVisits(foreground, now = Date.now()) {
   syncNotification(foreground);
   render();
 }
-function openNotification(key) {
+async function openNotification(key) {
   const item = notifications.current;
   if (!item || item.key !== key) return;
   if (item.preview) { notifications.dismiss(key); syncNotification(); return; }
@@ -211,33 +211,25 @@ function openNotification(key) {
     notifications.dismiss(key); applyBounds(); render(); return;
   }
   if (!url) {
-    openTool(item.provider);
-    notifications.dismiss(key); applyBounds(); render(); return;
-  }
-  execFile("/usr/bin/open", ["-b", bundles[item.provider], url], (error) => {
-    if (error) {
-      panel.webContents.send("notice", `未能打开 ${item.provider === "codex" ? "Codex" : "Claude"} 会话，请检查客户端是否已安装。`);
-      return;
+    if (await openTool(item.provider)) {
+      notifications.dismiss(key); applyBounds(); render();
     }
+    return;
+  }
+  if (await launchTool(item.provider, url)) {
     // A successful open request is not proof that this particular task was read.
     notifications.dismiss(key); applyBounds(); render();
-  });
+  }
 }
-function openTool(provider) {
-  if (!bundles[provider]) return;
+async function openTool(provider) {
   const completedAtClick = state.completed();
-  execFile("/usr/bin/open", ["-b", bundles[provider]], (error) => {
-    if (error) {
-      panel.webContents.send(
-        "notice",
-        `未能打开 ${provider}，请先安装官方客户端`,
-      );
-      return;
-    }
+  if (await launchTool(provider)) {
     // Wait for foreground confirmation; match only the selected Claude session.
     readState.didActivate(provider, completedAtClick);
     render();
-  });
+    return true;
+  }
+  return false;
 }
 function menu(provider) {
   return Menu.buildFromTemplate([
