@@ -1,6 +1,8 @@
 name: Verify and build macOS
 on:
   push:
+    paths-ignore:
+      - .github/workflows/publish.yml
   pull_request:
   workflow_dispatch:
 permissions:
