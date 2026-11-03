@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci --cpu=${{ matrix.arch }} --os=darwin
+      - run: npm ci --cpu=${{ matrix.arch }} --os=darwin --ignore-scripts
       - run: npm run verify
       - run: npx electron-builder --mac --${{ matrix.arch }} --publish never
         env:
