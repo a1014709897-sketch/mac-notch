@@ -8,7 +8,7 @@ const app = path.resolve(arch === "arm64" ? "dist/mac-arm64/Mac Notch.app" : "di
 const executable = path.join(app, "Contents/MacOS/Mac Notch");
 const native = path.join(app, `Contents/Resources/app.asar.unpacked/node_modules/@koromix/koffi-darwin-${arch}/darwin_${arch}/koffi.node`);
 if (!fs.existsSync(native)) throw new Error(`Missing ${arch} Koffi binary; install dependencies for the target CPU before packaging`);
-for (const file of [executable, native]) execFileSync("/usr/bin/lipo", ["-verify_arch", arch === "x64" ? "x86_64" : "arm64", file]);
+for (const file of [executable, native]) execFileSync("/usr/bin/lipo", [file, "-verify_arch", arch === "x64" ? "x86_64" : "arm64"]);
 execFileSync("/usr/bin/codesign", ["--verify", "--deep", "--strict", app]);
 if (process.argv.includes("--runtime")) {
   const koffi = path.join(app, "Contents/Resources/app.asar/node_modules/koffi");
