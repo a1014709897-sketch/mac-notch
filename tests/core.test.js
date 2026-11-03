@@ -67,9 +67,9 @@ test("physical camera gap determines geometry, not content or state", () => {
   };
   const g = layout(d, native);
   assert.equal(g.gap, 185);
-  assert.equal(g.width, 321);
+  assert.equal(g.width, 305);
   assert.equal(g.height, 32);
-  assert.equal(layout(d, null).width, 280);
+  assert.equal(layout(d, null).width, 264);
 });
 test("remaining quota is not token usage and zero remains a valid value", () => {
   assert.deepEqual(

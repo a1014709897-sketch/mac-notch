@@ -12,7 +12,7 @@ function layout(display, native) {
       gap > 0 &&
       Math.abs((frame?.size?.width || 0) - display.bounds.width) < 2,
   );
-  const width = hardware ? Math.ceil(gap) + 136 : 280;
+  const width = hardware ? Math.ceil(gap) + 120 : 264;
   const height = hardware ? native.safeTop : 32;
   const cx = hardware
     ? display.bounds.x +

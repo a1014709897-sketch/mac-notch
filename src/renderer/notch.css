@@ -257,6 +257,16 @@ body {
   border-radius: 0 0 12px 12px;
   overflow: hidden;
 }
+/* Compact collapsed wings; preserve the dashboard's existing spacing. */
+body:not(.expanded) #notch {
+  padding: 0 6px;
+}
+body:not(.expanded) .tool:not(.has-progress) {
+  gap: 4px;
+}
+body:not(.expanded) .has-progress .status {
+  width: 24px;
+}
 .expanded #surface {
   border-radius: 0 0 28px 28px;
   background: linear-gradient(165deg, #000 20%, #191e1d 100%);
