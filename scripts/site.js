@@ -1,6 +1,7 @@
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
+const { createHash } = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 const source = path.resolve(__dirname, "../site");
 const output = path.resolve(__dirname, "../.site-dist");
@@ -22,4 +23,10 @@ const command = html.match(/<code id="install-command">([^<]+)<\/code>/)?.[1];
 if (command !== "curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash") throw new Error("Unexpected installation command");
 fs.rmSync(output, { recursive: true, force: true });
 fs.cpSync(source, output, { recursive: true });
+// Keep a cached script or stylesheet from being mixed with a newer page.
+const publishedHtml = html.replace(/\b(href|src)="(\.\/[^"?#]+\.(?:css|js))"/g, (_, attribute, ref) => {
+  const version = createHash("sha256").update(fs.readFileSync(path.join(source, ref))).digest("hex").slice(0, 12);
+  return `${attribute}="${ref}?v=${version}"`;
+});
+fs.writeFileSync(path.join(output, "index.html"), publishedHtml);
 console.log(`Built GitHub Pages site: ${output}`);

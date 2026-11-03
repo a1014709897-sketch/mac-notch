@@ -13,7 +13,7 @@ npm run site:build
 python3 -m http.server 4173 --bind 127.0.0.1 --directory .site-dist
 ```
 
-Open http://127.0.0.1:4173. Rebuild and reload after changing files. The build validates asset and anchor references and JavaScript/Bash syntax, then copies only `site/` into `.site-dist/`.
+Open http://127.0.0.1:4173. Rebuild and reload after changing files. The build validates asset and anchor references and JavaScript/Bash syntax, then copies only `site/` into `.site-dist/`. Published script and stylesheet URLs include a content hash so a new page cannot accidentally load old cached controls or styles.
 
 `.github/workflows/pages.yml` validates the website and installer on pull requests. A push to `main` affecting website files also deploys the static artifact using GitHub Pages. The repository Pages source must be **GitHub Actions**. Website publishing does not update the existing app Release or its installers.
 
