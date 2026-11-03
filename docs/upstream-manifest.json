@@ -8,7 +8,7 @@
     "src/electron/notch/taskAttention.js": "84b8cd6737b4b08994b839c78bba78c0cc933b5cb0766c007a159539167bbe5c",
     "src/electron/notch/taskBatch.js": "fc945ab5c6f6dce24fcb3e013c992fac1cfa4fbb5e0c4e2e832c6737a479f5b9",
     "src/electron/notch/taskReadState.js": "3d42dd7a1f40a941d9473c04ec9b1d799ecbdc421665a0e616fe80adfef28fb2",
-    "src/shared/providers/codex/sessionContext.js": "639c79dcbd704ae025baacf97f8a353374824966d5a72f4bee404b939e33e352",
+    "src/shared/providers/codex/sessionContext.js": "c9f933469a950327923ad0659d4c8578b753089b789de603861d9fc85310055d",
     "src/shared/providers/codex/sessionIdentity.js": "7563c7beade30276d47213a0569d663e9bd2e6fc3d5e1c70f36a0c453e7f319b",
     "src/shared/providers/codex/transcript.js": "daf45fab9a2713ed195bf886d75b524804ab5babbb6c4ae8124c957205409fc2",
     "src/shared/providers/dsh/paths.js": "7490cece793df867d5543767a872930c5166efdbfb9869dbb96693b928155b96",

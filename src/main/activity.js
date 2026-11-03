@@ -107,6 +107,16 @@ async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
         provider: "codex",
         id,
         notification: codexNotification(id, codexTitles.get(id), s.completionDescription),
+        waitingPrompts: Object.fromEntries([
+          ...[...(s.inputQuestions || [])].map(([id, questions]) => [`call:${id}`, questions.filter(Boolean).join("；")]),
+          ...[...(s.asyncInputs || [])].filter(([, request]) => request.accepted)
+            .map(([id, request]) => [`question:${id}`, request.pending.map(index => request.questions?.[index]).filter(Boolean).join("；")]),
+        ]),
+        waitingIds: [
+          ...[...(s.pendingInputCalls || [])].map(id => `call:${id}`),
+          ...[...(s.asyncInputs || [])].filter(([, request]) => request.accepted)
+            .map(([id]) => `question:${id}`),
+        ],
         state: s.turnAborted
           ? "idle"
           : s.waitingForInput

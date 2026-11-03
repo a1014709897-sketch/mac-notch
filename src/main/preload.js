@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld("macNotch", {
       ipcRenderer.send(`notification:${action}`, key, value);
   },
   open: (provider) => ipcRenderer.send("tool:open", provider),
+  gesture: value => ipcRenderer.send("gesture", value),
+  previewNotification: kind => ipcRenderer.send("notification:preview", kind),
+  checkUpdate: () => ipcRenderer.invoke("update:check"),
+  downloadUpdate: () => ipcRenderer.invoke("update:download"),
+  openUpdate: () => ipcRenderer.invoke("update:open"),
   panel: () => ipcRenderer.send("panel:toggle"),
   closeSettings: () => ipcRenderer.send("settings:close"),
   collapse: () => ipcRenderer.send("panel:close"),

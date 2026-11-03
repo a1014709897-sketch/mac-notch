@@ -9,7 +9,7 @@ function paintCountdown() {
   cancelAnimationFrame(countdownFrame);
   if (!notificationData) return;
   const remaining = notificationData.expiresAt === null ? notificationData.remaining : notificationData.expiresAt - Date.now();
-  countdown.style.transform = `scaleX(${Math.min(1, Math.max(0, remaining / 5000))})`;
+  countdown.style.transform = `scaleX(${Math.min(1, Math.max(0, remaining / (notificationData.duration || 5000)))})`;
   if (notificationData.expiresAt !== null) countdownFrame = requestAnimationFrame(paintCountdown);
 }
 function renderNotification(value) {
@@ -17,6 +17,7 @@ function renderNotification(value) {
   notificationData = value;
   document.body.classList.toggle("notifying", Boolean(value));
   notificationElement.hidden = !value;
+  notificationElement.dataset.kind = value?.kind || "ended";
   if (!value) { cancelAnimationFrame(countdownFrame); return; }
   const source = value.provider === "codex" ? "Codex" : "Claude";
   document.querySelector("#notification-source").textContent = source;

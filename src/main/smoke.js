@@ -355,6 +355,49 @@ module.exports = async function smoke({
     await changeSetting("idle-quota", false);
     await changeSetting("login", false);
     panel.hide();
+    const gestureChecks = [];
+    async function gesture(kind) {
+      await notch.webContents.executeJavaScript(`document.querySelector('#notch').dispatchEvent(new MouseEvent('${kind}', {bubbles:true,cancelable:true}))`);
+      await wait();
+    }
+    await gesture("contextmenu"); gestureChecks.push(panel.isVisible() && !payload().expanded);
+    await gesture("dblclick"); gestureChecks.push(payload().expanded);
+    await gesture("dblclick"); gestureChecks.push(!payload().expanded);
+    await changeSetting("swap-gestures", true);
+    panel.hide(); await gesture("dblclick"); gestureChecks.push(panel.isVisible() && !payload().expanded);
+    await gesture("contextmenu"); gestureChecks.push(payload().expanded);
+    togglePanel(); await changeSetting("swap-gestures", false); panel.hide();
+    state.sessions.clear(); notifications.clear();
+    state.update([{provider:"codex",id:"assistance-smoke",state:"running"}]);
+    state.update([{provider:"codex",id:"assistance-smoke",state:"waiting",waitingIds:["question-one"],waitingPrompts:{"question-one":"请选择这次通知的显示方式。"}}]);
+    notifications.observe([...state.sessions.values()]); syncNotification(); await wait();
+    const assistanceChecks = [notifications.current?.kind === "waiting",
+      await notch.webContents.executeJavaScript(`document.querySelector('#notification-description').textContent === '请选择这次通知的显示方式。'`)];
+    if (out) fs.writeFileSync(path.join(out,"notification-waiting.png"),(await notch.webContents.capturePage()).toPNG());
+    await notch.webContents.executeJavaScript(`document.querySelector('#notification-close').click()`); await wait();
+    assistanceChecks.push(!notifications.current && state.sessions.get("codex:assistance-smoke").state === "waiting");
+    notifications.observe([...state.sessions.values()]); syncNotification(); assistanceChecks.push(!notifications.current);
+    state.update([{provider:"codex",id:"assistance-smoke",state:"running"}]);
+    state.update([{provider:"codex",id:"assistance-smoke",state:"waiting",waitingIds:["question-two"]}]);
+    notifications.observe([...state.sessions.values()]); syncNotification(); await wait();
+    await changeSetting("assistance-notifications", false); assistanceChecks.push(!notifications.current);
+    await changeSetting("assistance-notifications", true); notifications.observe([...state.sessions.values()]); syncNotification();
+    assistanceChecks.push(!notifications.current);
+    state.sessions.clear(); notifications.clear(); syncNotification();
+    panel.show();
+    const previewChecks = await panel.webContents.executeJavaScript(`({loaded:[...document.querySelectorAll('.notification-option img')].every(img=>img.complete&&img.naturalWidth>0),scrollable:document.querySelector('main').scrollHeight>document.querySelector('main').clientHeight})`);
+    if (out) {
+      await panel.webContents.executeJavaScript(`document.querySelector('main').scrollTop=0`); await wait();
+      fs.writeFileSync(path.join(out,"settings-top.png"),(await panel.webContents.capturePage()).toPNG());
+      await panel.webContents.executeJavaScript(`document.querySelector('main').scrollTop=document.querySelector('main').scrollHeight`); await wait();
+      previewChecks.updateVisible = await panel.webContents.executeJavaScript(`document.querySelector('#check-update').getBoundingClientRect().bottom <= innerHeight`);
+      fs.writeFileSync(path.join(out,"settings-bottom.png"),(await panel.webContents.capturePage()).toPNG());
+    }
+    await panel.webContents.executeJavaScript(`document.querySelector('[data-preview="waiting"]').click()`); await wait();
+    assistanceChecks.push(notifications.current?.preview === true);
+    await notch.webContents.executeJavaScript(`document.querySelector('#notification-body').click()`); await wait();
+    assistanceChecks.push(!notifications.current && state.sessions.size === 0);
+    panel.hide();
     const switches = [];
     for (const providers of [
       { claude: true, codex: false },
@@ -396,6 +439,7 @@ module.exports = async function smoke({
       })()`));
     }
     const ok =
+      gestureChecks.every(Boolean) && assistanceChecks.every(Boolean) && previewChecks.loaded && previewChecks.scrollable && previewChecks.updateVisible !== false &&
       notificationToggleChecks.every(Boolean) &&
       foregroundChecks.every(r=>r.neverExpanded && r.hidden && r.noReplay && r.otherStillNotifies) &&
       liveSettingsChecks.every(Boolean) &&
@@ -421,7 +465,7 @@ module.exports = async function smoke({
       panelCheck.bars === 24 &&
       !panelCheck.overflow &&
       panelCheck.contentTop >= panelCheck.headerBottom &&
-      setupCheck.switches === 6 &&
+      setupCheck.switches === 8 &&
       !setupCheck.overflow &&
       !setupCheck.legacyInputs &&
       switches.every(
@@ -449,7 +493,7 @@ module.exports = async function smoke({
     console.log(
       "SMOKE",
       JSON.stringify({
-        ok,
+        ok, gestureChecks, assistanceChecks, previewChecks,
         bounds,
         geometry,
         panelCheck,

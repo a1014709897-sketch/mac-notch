@@ -48,7 +48,7 @@ test('display preferences migrate, persist independently, and reject non-boolean
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mac-notch-display-'));
   t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
   const store = createStore(dir, {});
-  assert.equal(store.public().idleQuota, false);
+  assert.equal(store.public().idleQuota, true);
   assert.deepEqual(store.public().menuBar, {claude:true,codex:true});
   store.update({idleQuota:true, menuBar:{claude:false}});
   const reopened = createStore(dir, {});
@@ -74,4 +74,17 @@ test('notifications default on for new and legacy settings and persist an explic
   assert.equal(reopened.public().notifications, false);
   reopened.update({notifications:true});
   assert.equal(createStore(dir, {}).public().notifications, true);
+});
+
+test('new defaults preserve old explicit choices, migrate muted notices and persist gestures', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mac-notch-migration-'));
+  t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
+  assert.equal(createStore(dir, {}).public().idleQuota, true);
+  fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({idleQuota:false,notifications:false}));
+  const store = createStore(dir, {});
+  assert.equal(store.public().idleQuota, false);
+  assert.equal(store.public().assistanceNotifications, false);
+  store.update({assistanceNotifications:true,swapGestures:true});
+  const saved = createStore(dir, {}).public();
+  assert.equal(saved.swapGestures,true); assert.equal(saved.assistanceNotifications,true); assert.equal(saved.notifications,false);
 });

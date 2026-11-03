@@ -26,7 +26,7 @@ const entries = [
 ];
 try {
   for (const name of entries)
-    fs.cpSync(name, path.join(root, name), { recursive: true });
+    fs.cpSync(name, path.join(root, name), { recursive: true, filter: source => path.basename(source) !== "AGENTS.md" });
   fs.mkdirSync("dist", { recursive: true });
   const output = path.resolve(`dist/Mac-Notch-${version}-source.zip`);
   const result = spawnSync(

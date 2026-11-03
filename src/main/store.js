@@ -9,13 +9,15 @@ function createStore(directory, safeStorage) {
     claudeCookie: null,
     providers: { claude: true, codex: true },
     setupComplete: false,
-    idleQuota: false,
+    idleQuota: true,
     notifications: true,
+    swapGestures: false,
     menuBar: { claude: true, codex: true },
   };
   try {
     data = { ...data, ...JSON.parse(fs.readFileSync(file, "utf8")) };
   } catch {}
+  if (typeof data.assistanceNotifications !== "boolean") data.assistanceNotifications = data.notifications !== false;
   data.providers = {
     claude: data.providers?.claude !== false,
     codex: data.providers?.codex !== false,
@@ -33,6 +35,8 @@ function createStore(directory, safeStorage) {
       providers: { ...data.providers },
       idleQuota: data.idleQuota === true,
       notifications: data.notifications !== false,
+      assistanceNotifications: data.assistanceNotifications !== false,
+      swapGestures: data.swapGestures === true,
       menuBar: { ...data.menuBar },
       setupComplete: data.setupComplete === true,
       proxy: data.proxy,
@@ -49,6 +53,8 @@ function createStore(directory, safeStorage) {
     },
     update(value) {
       const next = { ...data, providers: { ...data.providers }, menuBar: { ...data.menuBar } };
+      for (const key of ["assistanceNotifications", "swapGestures"])
+        if (typeof value[key] === "boolean") next[key] = value[key];
       if (typeof value.notifications === "boolean") next.notifications = value.notifications;
       if (typeof value.idleQuota === "boolean") next.idleQuota = value.idleQuota;
       for (const provider of ["claude", "codex"])

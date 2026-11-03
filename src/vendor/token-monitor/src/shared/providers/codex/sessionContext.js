@@ -65,6 +65,7 @@ function applyLine(state, line, position, contextStart) {
     state.completionDescription = !state.turnAborted && typeof payload.last_agent_message === 'string'
       ? payload.last_agent_message.slice(0, 16384) : '';
     state.pendingInputCalls.clear();
+    state.inputQuestions.clear();
   } else if (payload.type === 'task_started') {
     state.taskIdentity = payload.turn_id || entry.timestamp || String(position);
     state.reasoningEffort = null;
@@ -72,9 +73,10 @@ function applyLine(state, line, position, contextStart) {
     state.turnAborted = false;
     state.completionDescription = '';
     state.pendingInputCalls.clear();
+    state.inputQuestions.clear();
   }
-  // Track protocol identity only. Error results retire a request just like an
-  // answer; neither question text nor collaboration mode determines waiting.
+  // Protocol identity determines waiting. Retain bounded question text only for
+  // notification previews; answers and options are never copied into the preview.
   const callId = typeof payload.call_id === 'string' && payload.call_id.length <= 256
     ? payload.call_id : '';
   // Async questions acknowledge delivery immediately; only matching UI replies
@@ -83,7 +85,7 @@ function applyLine(state, line, position, contextStart) {
     try {
       const questions = JSON.parse(payload.arguments).questions;
       if (Array.isArray(questions) && questions.length > 0 && questions.length <= 32 && state.asyncInputs.size < 32)
-        state.asyncInputs.set(callId, { accepted: false, pending: questions.map((_q, i) => i) });
+        state.asyncInputs.set(callId, { accepted: false, pending: questions.map((_q, i) => i), questions: questions.map(q => typeof q?.title === 'string' ? q.title.slice(0, 2048) : '') });
     } catch (_) { /* Missing arguments cannot establish an answerable question. */ }
   }
   if (callId && payload.type === 'function_call_output' && state.asyncInputs.has(callId)) {
@@ -118,9 +120,17 @@ function applyLine(state, line, position, contextStart) {
   }
   if (payload.type === 'turn_aborted') state.asyncInputs.clear();
   if (callId && payload.type === 'function_call' && payload.name === 'request_user_input') {
-    if (state.pendingInputCalls.size < MAX_PENDING_INPUT_CALLS) state.pendingInputCalls.add(callId);
+    if (state.pendingInputCalls.size < MAX_PENDING_INPUT_CALLS) {
+      state.pendingInputCalls.add(callId);
+      try {
+        const questions = JSON.parse(payload.arguments).questions;
+        if (Array.isArray(questions)) state.inputQuestions.set(callId, questions.slice(0, 32)
+          .map(q => typeof q?.question === 'string' ? q.question.slice(0, 2048) : ''));
+      } catch (_) { /* Waiting still follows the call identity when text is missing. */ }
+    }
   } else if (callId && payload.type === 'function_call_output') {
     state.pendingInputCalls.delete(callId);
+    state.inputQuestions.delete(callId);
   }
 }
 
@@ -156,8 +166,8 @@ function readCodexSessionState(filePath, deps = {}) {
     if (cached?.identity === identity && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs) return cached;
     const compressed = isCompressedCodexTranscript(filePath);
     const appendOnly = !compressed && cached?.identity === identity && stat.size > cached.size;
-    const state = appendOnly ? { ...cached, pendingInputCalls: new Set(cached.pendingInputCalls), asyncInputs: new Map([...cached.asyncInputs].map(([id, request]) => [id, { ...request, pending: [...request.pending] }])) }
-      : { context: null, turnEnded: undefined, pendingInputCalls: new Set(), asyncInputs: new Map(), trailing: Buffer.alloc(0), droppingLine: false };
+    const state = appendOnly ? { ...cached, pendingInputCalls: new Set(cached.pendingInputCalls), inputQuestions: new Map(cached.inputQuestions), asyncInputs: new Map([...cached.asyncInputs].map(([id, request]) => [id, { ...request, pending: [...request.pending] }])) }
+      : { context: null, turnEnded: undefined, pendingInputCalls: new Set(), inputQuestions: new Map(), asyncInputs: new Map(), trailing: Buffer.alloc(0), droppingLine: false };
     if (compressed) {
       const bytes = readCompressedCodexTranscript(filePath, deps);
       const start = Math.max(0, bytes.length - TURN_READ_MAX_BYTES);

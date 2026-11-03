@@ -22,7 +22,7 @@ for (const [command, args] of [[process.execPath, ["--check", path.join(source, 
 const command = html.match(/<code id="install-command">([^<]+)<\/code>/)?.[1];
 if (command !== "curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash") throw new Error("Unexpected installation command");
 fs.rmSync(output, { recursive: true, force: true });
-fs.cpSync(source, output, { recursive: true });
+fs.cpSync(source, output, { recursive: true, filter: file => path.basename(file) !== "AGENTS.md" });
 // Keep a cached script or stylesheet from being mixed with a newer page.
 const publishedHtml = html.replace(/\b(href|src)="(\.\/[^"?#]+\.(?:css|js))"/g, (_, attribute, ref) => {
   const version = createHash("sha256").update(fs.readFileSync(path.join(source, ref))).digest("hex").slice(0, 12);

@@ -32,6 +32,17 @@ class TaskState {
         next.acknowledged = false;
         next.completedAt = null;
       }
+      if (row.state === "waiting") {
+        const continued = old?.state === "waiting" && !fresh;
+        next.waitingEpisode = continued ? old.waitingEpisode : (old?.waitingEpisode || 0) + 1;
+        const identities = row.waitingIds?.length ? row.waitingIds : ["waiting"];
+        const previous = new Map((continued ? old.waitingEvents || [] : []).map(event => [event.id, event]));
+        next.waitingEvents = identities.map(id => ({ ...(previous.get(id) || {
+          id, key: `${next.generation}:${next.waitingEpisode}:${id}`, at: now,
+          // The first observed snapshot is a baseline, never a fresh alert.
+          notify: Boolean(old),
+        }), description: row.waitingPrompts?.[id] || "" }));
+      } else next.waitingEvents = [];
       if (row.state === "ended") {
         if (!old || old.state === "idle") continue;
         next.completedAt = old.completedAt || now;

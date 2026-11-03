@@ -30,7 +30,7 @@ test("visit clears badge and queued notification, keeps running and waiting, and
   queue.observe([...state.sessions.values()], 2000); queue.tick(2000);
   visit(state.completed(), "codex", 2000);
   for (const task of visit(state.completed(), "codex", 3000)) state.acknowledge(task.provider, task.id);
-  queue.observe([...state.sessions.values()], 3000);
+  queue.observe([...state.sessions.values()], 3000, "codex");
   assert.equal(queue.current, null); assert.equal(state.completed().length, 0);
   assert.equal(state.sessions.get("codex:working").state, "running");
   assert.equal(state.sessions.get("codex:question").state, "waiting");

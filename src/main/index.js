@@ -10,6 +10,7 @@ const {
   safeStorage,
   session,
   powerMonitor,
+  shell,
 } = require("electron");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -19,6 +20,8 @@ const { readActivity } = require("./activity");
 const { readQuota, remaining } = require("./quotas");
 const { NotificationQueue, sessionURL } = require("./notifications");
 const notifications = new NotificationQueue();
+const { createUpdater } = require("./updates");
+let updater;
 const { taskLayout, layout, expandedLayout, notificationLayout } = require("./layout");
 const { Worker } = require("node:worker_threads");
 const { summarize } = require("./usage");
@@ -93,6 +96,7 @@ function payload() {
     expanded,
     notification: expanded || locked ? null : notifications.current,
     usage,
+    update: updater?.snapshot(),
     version: app.getVersion(),
     demo,
   };
@@ -199,6 +203,7 @@ function acknowledgeVisits(foreground, now = Date.now()) {
 function openNotification(key) {
   const item = notifications.current;
   if (!item || item.key !== key) return;
+  if (item.preview) { notifications.dismiss(key); syncNotification(); return; }
   const url = sessionURL(item.desktopId, item.provider);
   // Smoke exercises the actual IPC without navigating the user's real Claude app.
   if (smoke) {
@@ -398,6 +403,7 @@ app.whenReady().then(async () => {
   app.dock.hide();
   store = createStore(app.getPath("userData"), safeStorage);
   notifications.setEnabled(store.public().notifications);
+  notifications.setWaitingEnabled(store.public().assistanceNotifications);
   transport = session.fromPartition("mac-notch-network");
   await transport.setProxy(
     store.public().proxy
@@ -407,6 +413,10 @@ app.whenReady().then(async () => {
         }
       : { mode: "system" },
   );
+  const updateArch = process.arch === "arm64" || (process.platform === "darwin" && app.runningUnderARM64Translation) ? "arm64" : "x64";
+  updater = createUpdater({ version: app.getVersion(), arch: updateArch,
+    fetch: (...args) => transport.fetch(...args), directory: path.join(app.getPath("userData"), "updates"),
+    openPath: file => shell.openPath(file), onChange: () => render() });
   const webPreferences = {
     preload: path.join(__dirname, "preload.js"),
     contextIsolation: true,
@@ -477,6 +487,22 @@ app.whenReady().then(async () => {
   ipcMain.on("panel:toggle", (event) => {
     if (own(event)) togglePanel();
   });
+  ipcMain.on("gesture", (event, gesture) => {
+    if (event.sender !== notch.webContents || !["double", "right"].includes(gesture)) return;
+    const settingsGesture = store.public().swapGestures ? "double" : "right";
+    if (gesture === settingsGesture) showSettings(); else togglePanel();
+  });
+  ipcMain.on("notification:preview", (event, kind) => {
+    if (event.sender !== panel.webContents || !["waiting", "ended"].includes(kind)) return;
+    setExpanded(false);
+    notifications.pending.unshift({ key: `preview:${Date.now()}`, preview: true, kind,
+      duration: kind === "waiting" ? 8000 : 5000, provider: "codex", createdAt: Date.now(),
+      title: kind === "waiting" ? "需要你处理" : "本轮任务已完成",
+      description: kind === "waiting" ? "请选择接下来执行的方案。" : "已整理好结果，可以回到会话查看。" });
+    syncNotification();
+  });
+  for (const operation of ["check", "download", "open"])
+    ipcMain.handle(`update:${operation}`, event => event.sender === panel.webContents ? updater[operation]() : null);
   ipcMain.on("settings:close", (event) => {
     if (own(event)) panel.hide();
   });
@@ -510,11 +536,17 @@ app.whenReady().then(async () => {
         startAtLogin: value?.startAtLogin,
         idleQuota: value?.idleQuota,
         notifications: value?.notifications,
+        assistanceNotifications: value?.assistanceNotifications,
+        swapGestures: value?.swapGestures,
         menuBar: value?.menuBar,
         setupComplete: value?.setupComplete,
       });
       if (before.notifications !== result.notifications) {
         notifications.setEnabled(result.notifications, [...state.sessions.values()]);
+        syncNotification();
+      }
+      if (before.assistanceNotifications !== result.assistanceNotifications) {
+        notifications.setWaitingEnabled(result.assistanceNotifications, [...state.sessions.values()]);
         syncNotification();
       }
       const providersChanged = PROVIDERS.some(p => before.providers[p] !== result.providers[p]);
@@ -639,6 +671,7 @@ app.on("before-quit", () => {
   clearInterval(quotaTimer);
   clearInterval(attentionTimer);
   clearInterval(notificationTimer);
+  updater?.dispose();
   usageWorker?.terminate();
 });
 app.on("window-all-closed", () => {});

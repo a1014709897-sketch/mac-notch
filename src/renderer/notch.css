@@ -505,3 +505,7 @@ body:not(.expanded):not(.notifying) .tool:has(.idle-quota) { gap: 3px; padding: 
 
 /* The notification conveys completion; restore the header check when it closes. */
 body.notifying #notch .check { visibility: hidden; }
+
+#notification[data-kind="waiting"] #notification-source { color: #d8bd92; }
+#notification[data-kind="waiting"] #notification-track { background: #3b3120; }
+#notification[data-kind="waiting"] #notification-countdown { background: #d8bd92; }

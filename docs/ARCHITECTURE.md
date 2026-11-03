@@ -35,7 +35,7 @@ flowchart LR
 
 只读取自己的两类客户端本机数据。问题内容可能在解析本地 JSONL 时进入主进程内存，但不写入新日志、不传给 renderer、不上传服务器。状态和用量界面接收 provider/state/count、额度窗口、按小时或日期汇总的数字和非敏感设置。完成通知另外接收会话标题和最多 400 字符的本轮纯文本摘要，不渲染 HTML，不上传内容。用量文件在独立 Worker 中流式读取，消息正文不进入界面，也不持久化第二份。
 
-应用没有遥测、远程代码、自动更新服务器。网络仅到 `api.anthropic.com`、`claude.ai`、`chatgpt.com`。禁用请求重定向，防止携带凭据跨站。默认使用系统代理，配置代理不会修改全局设置或两个工具的网络。
+应用没有遥测或远程代码。手动更新通过独立的 GitHub Releases 请求查询 Mac Notch 仓库，并下载其发布附件（含 GitHub 下载 CDN 重定向）；该请求不携带额度凭据。额度网络仅到 `api.anthropic.com`、`claude.ai`、`chatgpt.com`。禁用请求重定向，防止携带凭据跨站。默认使用系统代理，配置代理不会修改全局设置或两个工具的网络。
 
 窗口启用 contextIsolation、sandbox、CSP、禁用 nodeIntegration，拒绝导航与新窗口。启动客户端只从内置 bundle ID 白名单选择。
 
@@ -47,3 +47,5 @@ Codex 已读来自本机 `electron-thread-read-state-v1` 的 local 线程未读�
 
 - `usage-worker.js`：每 30 秒扫描可用本地记录；内存维护文件偏移和数字元数据，不落盘会话正文。
 - `usage.js` / `pricing.js`：请求去重、累计差值、日历日汇总、标准 API 费用估算与未计价覆盖率。
+
+`src/main/updates.js` 在主进程完成语义版本比较、发布渠道/架构选择、流式下载与 SHA-256 校验。renderer 仅通过固定操作接收状态和更新说明，不提供任意下载 URL 或本地打开路径。

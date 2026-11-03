@@ -6,10 +6,10 @@ const vm = require("node:vm");
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function harness() {
   const settings = {providers:{claude:true,codex:true}, menuBar:{claude:true,codex:true}, idleQuota:false,startAtLogin:false,notifications:true};
-  const controls = Object.fromEntries(["notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
+  const controls = Object.fromEntries(["assistance-notifications","swap-gestures","gesture-description","gesture-feedback","check-update","download-update","open-update","notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
   const requests = [];
   let onState;
-  const context = vm.createContext({document:{getElementById:id=>controls[id]}, macNotch:{
+  const context = vm.createContext({document:{getElementById:id=>controls[id],querySelectorAll:()=>[]}, macNotch:{
     get:async()=>({settings:structuredClone(settings),version:"test"}),
     onState:callback=>{onState=callback;},onNotice:()=>{},quit:()=>{},
     save:patch=>new Promise((resolve,reject)=>requests.push({patch:JSON.parse(JSON.stringify(patch)),resolve,reject})),

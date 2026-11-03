@@ -3,6 +3,12 @@ const root = document.querySelector("#notch");
 let last = "",
   clickTimer;
 const progressValues = new Map();
+root.addEventListener("contextmenu", event => {
+  event.preventDefault(); clearTimeout(clickTimer); macNotch.gesture("right");
+});
+root.addEventListener("dblclick", event => {
+  event.preventDefault(); clearTimeout(clickTimer); macNotch.gesture("double");
+});
 // Apply the silhouette only to the compact header, never to expanded panels.
 function updateContour() {
   const w = window.innerWidth;
@@ -26,14 +32,15 @@ function render(data) {
   const tasks = active.length ? active : data.tasks;
   const showQuota = data.settings?.idleQuota === true;
   document.body.classList.toggle("idle-quota-enabled", showQuota);
-  const key = JSON.stringify([tasks, showQuota, data.remainingQuota, data.quotas]);
+  const key = JSON.stringify([tasks, showQuota, data.remainingQuota, data.quotas, data.settings?.swapGestures]);
   if (key === last) return;
   last = key;
   root.replaceChildren();
   for (const task of tasks) {
     const button = document.createElement("button");
     button.className = `tool ${task.provider} state-${task.state}${(task.animating ?? task.state === "running") ? " animating" : ""}${task.progress && task.state === "running" ? " has-progress" : ""}${tasks.length === 1 ? " single" : ""}`;
-    button.title = `${task.provider === "claude" ? "Claude" : "Codex"} · ${{ idle: "空闲", running: "执行中", waiting: "需要协助", ended: "已完成" }[task.state]} · 单击打开，双击额度`;
+    button.title = `${task.provider === "claude" ? "Claude" : "Codex"} · ${{ idle: "空闲", running: "执行中", waiting: "需要协助", ended: "已完成" }[task.state]} · 单击打开工具`;
+    button.title += data.settings?.swapGestures ? " · 双击打开控制页 · 右击查看额度" : " · 右击打开控制页 · 双击查看额度";
     if (task.progress)
       button.title += ` · 已完成 ${task.progress.done}/${task.progress.total}`;
     button.setAttribute("aria-label", button.title);
@@ -95,7 +102,6 @@ function render(data) {
     button.addEventListener("click", (event) => {
       clearTimeout(clickTimer);
       if (event.detail > 1) {
-        macNotch.panel();
         return;
       }
       clickTimer = setTimeout(() => macNotch.open(task.provider), 350);
