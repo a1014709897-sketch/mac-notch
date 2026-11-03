@@ -138,8 +138,6 @@ summary span { flex-shrink: 0; font-size: 24px; font-weight: 300; color: #667d5b
 .faq details[open] summary span { transform: rotate(45deg); }
 .faq details p { max-width: 900px; padding: 0 26px 24px; font-size: 16px; line-height: 1.8; color: #5f6d58; }
 .site-footer { padding: 80px 0 36px; }
-.footer-legal { font-size: 12px; color: #6e7868; line-height: 1.9; margin-top: 20px; max-width: 1000px; }
-.footer-legal a { text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 1100px) {
   .shell { width: calc(100% - 64px); }
@@ -235,7 +233,6 @@ summary span { flex-shrink: 0; font-size: 24px; font-weight: 300; color: #667d5b
   summary { padding: 20px; gap: 16px; font-size: 16px; }
   .faq details p { padding: 0 20px 22px; font-size: 16px; }
   .site-footer { padding-top: 56px; }
-  .footer-legal { font-size: 12px; margin-top: 16px; }
 }
 @media (max-width: 650px) {
   .feature-grid { grid-template-columns: 1fr; }
