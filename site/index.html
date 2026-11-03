@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f4">
+  <title>Mac Notch — AI 在忙，抬眼就知道。</title>
+  <meta name="description" content="把 Claude 和 Codex 放进 Mac 的刘海。任务状态、协助提醒、订阅额度，抬眼就知道。MIT 开源，复制一条命令即可交给 Agent 安装。">
+  <meta property="og:title" content="Mac Notch — 给你的 Mac 刘海，住进两位 AI 搭子。">
+  <meta property="og:description" content="Claude 与 Codex 的任务状态、协助提醒和订阅额度。macOS 专属，MIT 开源。">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://a1014709897-sketch.github.io/mac-notch/assets/app.png">
+  <meta property="og:url" content="https://a1014709897-sketch.github.io/mac-notch/">
+  <link rel="canonical" href="https://a1014709897-sketch.github.io/mac-notch/">
+  <link rel="icon" type="image/png" href="./assets/app.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-4a3.5 3.5 0 0 0-1-2.8c3.4-.4 7-1.7 7-7.7A6 6 0 0 0 20.3 3a5.6 5.6 0 0 0-.1-4S18.9-1.4 16 1a15.4 15.4 0 0 0-8 0C5.1-1.4 3.8-1 3.8-1a5.6 5.6 0 0 0-.1 4A6 6 0 0 0 2 7.5c0 6 3.6 7.3 7 7.7A3.5 3.5 0 0 0 8 18v4" transform="translate(1 3) scale(.85)"/></symbol>
+  </defs></svg>
+
+  <header class="site-header shell">
+    <a class="brand" href="#" aria-label="Mac Notch 首页"><span class="brand-notch"><i></i><i></i></span>Mac Notch<span class="beta">BETA</span></a>
+    <nav aria-label="主导航">
+      <a class="nav-secondary" href="#playground">试一试</a><a class="nav-secondary" href="#details">功能</a><a class="nav-secondary" href="#faq">常见问题</a>
+      <a class="github-link" href="https://github.com/a1014709897-sketch/mac-notch" aria-label="GitHub 源码"><svg><use href="#github"/></svg><span>GitHub</span></a>
+      <a class="button small" href="#install">安装 <svg><use href="#arrow"/></svg></a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="eyebrow"><span class="live-dot"></span> 为 Claude & Codex 而生 <span class="eyebrow-divider"></span> macOS 专属</div>
+      <h1 id="hero-title">AI 在忙，<span class="hero-second">抬眼就知道<span class="title-dot">。</span></span></h1>
+      <p class="hero-description">给 Mac 的刘海，住进两位 AI 搭子。<br>谁在工作、谁需要你、还剩多少额度，都在眼前。</p>
+      <div class="hero-actions"><a class="button" href="#install">交给 Agent 安装 <svg><use href="#arrow"/></svg></a><a class="text-link" href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">手动下载 <span>↗</span></a></div>
+      <p class="fine-print hero-meta">免费开源 <span>·</span> macOS 13+ <span>·</span> Apple Silicon</p>
+    </section>
+
+    <section class="playground shell" id="playground" aria-label="Mac Notch 交互演示">
+      <div class="demo-heading"><span><span class="live-dot"></span> 小小刘海，大有动静</span><button id="motion-toggle" class="quiet-button" type="button" aria-pressed="false">暂停动画 <span aria-hidden="true">Ⅱ</span></button></div>
+      <div class="mac-display" id="demo-display" data-state="running" data-tool="both">
+        <div class="wallpaper" aria-hidden="true"><div class="hill hill-back"></div><div class="hill hill-middle"></div><div class="hill hill-front"></div><div class="wallpaper-grain"></div></div>
+        <div class="menu-bar" aria-hidden="true"><span class="menu-left">◈ <b>Finder</b><span>文件</span><span>编辑</span></span><span class="tray"><img src="./assets/claude.svg" alt="">97% <i></i><img src="./assets/codex.svg" alt="">84% <span class="menu-time">09:41</span></span></div>
+        <div class="notch" id="demo-notch" role="group" aria-label="模拟刘海：单击演示跳转，双击查看模拟额度">
+          <button class="notch-tool claude" data-client="claude" type="button" aria-label="演示打开 Claude 客户端"><img src="./assets/claude.svg" alt="Claude"><span class="task-indicator" aria-hidden="true"></span></button>
+          <span class="camera-space" aria-hidden="true"></span>
+          <button class="notch-tool codex" data-client="codex" type="button" aria-label="演示打开 Codex 客户端"><img src="./assets/codex.svg" alt="Codex"><span class="task-indicator" aria-hidden="true"></span></button>
+          <button class="single-hit" type="button" aria-label="演示打开当前工具客户端" hidden></button>
+        </div>
+        <div class="desktop-note"><span class="note-kicker">YOUR LITTLE AI COMPANIONS</span><p>你继续创造。<br>进度，留在眼角。</p><span class="note-line"></span></div>
+        <div class="work-window" id="work-window">
+          <div class="window-header"><span class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></span><span id="client-name">Claude + Codex</span><span class="window-badge">演示</span></div>
+          <div class="window-content"><div class="window-companions"><img class="window-claude" src="./assets/claude.svg" alt=""><img class="window-codex" src="./assets/codex.svg" alt=""></div><p id="work-title">各忙各的，也配合默契。</p><span id="work-description">Claude 在梳理思路，Codex 在实现代码。</span><div class="code-lines" aria-hidden="true"><i></i><i></i><i></i></div></div>
+        </div>
+        <div id="quota-panel" class="quota-panel" role="region" aria-label="模拟额度面板" hidden>
+          <div class="quota-header"><b>剩余额度</b><button id="close-quotas" aria-label="关闭模拟额度面板" type="button">×</button></div>
+          <div class="quota-entry"><div><img src="./assets/claude.svg" alt=""><span>Claude</span><b>97<small>%</small></b></div><div class="quota-track"><i style="width:97%"></i></div><p>5 小时窗口 · 示例数据</p></div>
+          <div class="quota-entry codex-quota"><div><img src="./assets/codex.svg" alt=""><span>Codex</span><b>84<small>%</small></b></div><div class="quota-track"><i style="width:84%"></i></div><p>5 小时窗口 · 示例数据</p></div>
+          <p class="quota-disclaimer">网页演示不读取你的账号或真实额度。</p>
+        </div>
+        <div class="demo-toast" id="demo-toast" role="status"></div>
+        <div class="desktop-footer"><span>交互演示 · 非真实任务</span><span>单击切换客户端 / 双击查看额度</span></div>
+      </div>
+      <div class="demo-controls">
+        <div class="state-controls" role="group" aria-label="选择演示状态"><button data-state="idle" aria-pressed="false">待命</button><button data-state="running" aria-pressed="true">运行中</button><button data-state="waiting" aria-pressed="false">需协助 <span class="mini-question">?</span></button><button data-state="ended" aria-pressed="false">已完成 <span class="mini-check">✓</span></button></div>
+        <div class="tool-controls" role="group" aria-label="选择演示工具"><button data-tool="both" aria-pressed="true">双搭档</button><button data-tool="claude" aria-pressed="false">Claude</button><button data-tool="codex" aria-pressed="false">Codex</button></div>
+      </div>
+      <p class="state-caption" id="state-caption" aria-live="polite">小怪兽轻跳，Codex 旋转。三个小点告诉你，它们还在忙。</p>
+      <noscript><p class="noscript-note">交互演示需要 JavaScript；你仍可查看功能、复制安装命令或前往 GitHub 下载。</p></noscript>
+    </section>
+
+    <section class="intro-strip shell" aria-label="产品原则"><span>小而有用。</span><p>不必来回切窗口，<br class="mobile-break">也不用一直盯着进度。</p><span class="strip-icons" aria-hidden="true"><img src="./assets/claude.svg" alt=""><span>+</span><img src="./assets/codex.svg" alt=""></span></section>
+
+    <section class="features shell" id="details" aria-labelledby="features-title">
+      <div class="section-heading"><span class="section-label">01 / JUST ENOUGH</span><h2 id="features-title">该知道的，<br>刚刚好。</h2><p>一个刘海，两枚菜单栏图标。<br>只放与你此刻有关的信息。</p></div>
+      <div class="feature-grid">
+        <article class="feature feature-status"><span class="feature-number">01</span><h3>动起来，就知道在忙。</h3><p>运行、协助、完成，各有自己的小表情。<br>不用一行字，也能心领神会。</p><div class="status-gallery" aria-label="运行中显示三点，协助显示问号，完成显示对勾"><div><span class="mini-notch"><img src="./assets/claude.svg" alt="Claude"><span class="dots"><i></i><i></i><i></i></span></span><small>正在努力</small></div><div><span class="mini-notch"><img src="./assets/codex.svg" alt="Codex"><span class="question">?</span></span><small>需要你了</small></div><div><span class="mini-notch"><img src="./assets/claude.svg" alt="Claude"><svg class="done"><use href="#check"/></svg></span><small>搞定，等你看</small></div></div></article>
+        <article class="feature feature-quota"><span class="feature-number">02</span><h3>额度，也有个底。</h3><p>两枚彩色图标，显示各自订阅剩余额度。<br>双击刘海，展开每个额度窗口的详情。</p><div class="quota-preview" aria-label="示例剩余额度：Claude 97%，Codex 84%"><img src="./assets/claude.svg" alt="Claude"><b>97<span>%</span></b><i></i><img src="./assets/codex.svg" alt="Codex"><b>84<span>%</span></b></div><span class="demo-label">示例数据 · 显示剩余额度，而非已用 Token</span></article>
+        <article class="feature feature-interaction"><span class="feature-number">03</span><h3>需要时，一下就到。</h3><p>单击打开对应客户端，双击查看额度。<br>悬停不展开，专注时保持安静。</p><div class="gesture-row"><span><kbd>单击</kbd> 打开客户端</span><span><kbd>双击</kbd> 查看额度</span></div></article>
+        <article class="feature feature-batch"><span class="feature-number">04</span><h3>同时开工，也有条理。</h3><p>同一工具的多个任务，聚合展示完成进度。<br>查看一个会话，只消除它自己的完成提醒。</p><div class="batch-preview"><img src="./assets/claude.svg" alt="Claude"><span>1<span class="batch-slash">/</span>3</span><div><i class="filled"></i><i></i><i></i></div><small>一个已完成，两个继续忙</small></div></article>
+      </div>
+      <div class="privacy-line"><svg><use href="#check"/></svg><p><b>状态留在本机。</b> 本地读取任务状态；额度请求仅发往对应厂商。无 Mac Notch 中转服务器，无遥测。</p><a href="https://github.com/a1014709897-sketch/mac-notch/blob/main/SECURITY.md">查看说明 ↗</a></div>
+    </section>
+
+    <section class="install-section" id="install" aria-labelledby="install-title"><div class="shell install-layout">
+      <div class="install-copy"><span class="section-label">02 / MADE FOR YOUR AGENT</span><h2 id="install-title">安装这件事，<br>也交给 AI。</h2><p>复制命令，发给你的 Codex 或 Claude Code，<br>让有终端权限的 Agent 帮你安装。<br>你也可以直接在 Mac 终端运行。</p><div class="install-platform"><span class="platform-mark">⌘</span><span>macOS 13+<small>Apple Silicon · v0.1.0</small></span></div></div>
+      <div class="install-card"><div class="terminal-header"><span class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></span><span>一条命令，交给 Agent</span><span>bash</span></div><div class="terminal-code"><span class="prompt" aria-hidden="true">$</span><code id="install-command">curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash</code></div><button class="copy-button" type="button" id="copy-command"><svg><use href="#copy"/></svg><span>复制安装命令</span></button><span id="copy-result" class="sr-only" role="status"></span><div class="install-note"><svg><use href="#check"/></svg><p>检查系统 → 下载 GitHub 安装包 → 校验 SHA-256 → 安装<br>默认安装至 <code>~/Applications</code>，无需 sudo。</p></div><div class="install-links"><a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">手动下载 ↗</a><a href="./install.sh">查看安装脚本 ↗</a><a href="https://github.com/a1014709897-sketch/mac-notch#快速开始">从源码构建 ↗</a></div></div>
+      <p class="release-note">首发为测试版，尚未完成 Apple Developer ID 公证，macOS 可能拦截打开。脚本不会关闭系统安全保护。<a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">安装前查看发行说明 ↗</a></p>
+    </div></section>
+
+    <section class="faq shell" id="faq" aria-labelledby="faq-title"><div class="section-heading"><span class="section-label">03 / A FEW THINGS TO KNOW</span><h2 id="faq-title">装之前，<br>你可能想问。</h2><p>把支持范围和限制说清楚。</p></div><div class="faq-list">
+      <details><summary>支持哪些 Mac？没有刘海也能用吗？<span>+</span></summary><p>首发安装包支持 macOS 13 及以上的 Apple Silicon Mac。内置刘海屏会为硬件摄像头留出空间；没有刘海的屏幕以固定宽度胶囊显示。Intel 构建命令已提供，但尚未经过 Intel 真机验收，所以首发不提供 Intel 安装包。</p></details>
+      <details><summary>需要另外购买订阅，或者登录 Mac Notch 吗？<span>+</span></summary><p>Mac Notch 免费、MIT 开源，没有自己的账号系统。订阅额度来自你已有的 Claude / Codex 账号。Codex 需要官方客户端或 CLI 的订阅登录凭据；Claude 优先读取 Claude Code 凭据。仅登录 Claude 桌面版可能无法查询额度，可在设置中配置自己的网页 sessionKey。API Key 用量不等于订阅额度。</p></details>
+      <details><summary>会读取我的对话，或者改变 Claude / Codex 的代理吗？<span>+</span></summary><p>应用在本机读取会话日志和元数据，用于判断任务状态；不把对话发到 Mac Notch 服务器，项目也没有这样的服务器。账号凭据只用于对应厂商额度接口，手工输入的 Claude sessionKey 加密保存。自定义代理仅作用于 Mac Notch 的额度请求，不更改系统或其他客户端的代理。</p></details>
+      <details><summary>点击完成图标，会直接进入对应任务吗？<span>+</span></summary><p>单击会切到对应工具的客户端，目前不保证定位到具体会话。完成提醒会依据具体会话的已读变化消除；只打开客户端，不会清空其他会话的提醒。无法取得可靠已读信号时，提醒会保留。协助状态同样需要实际回答或继续任务才会解除。</p></details>
+      <details><summary>为什么协助状态偶尔没有识别到？<span>+</span></summary><p>状态识别依赖官方客户端的本地记录格式，支持已适配的提问与回答事件，但无法保证覆盖所有权限弹窗、远程执行器或外部取消操作。客户端更新也可能改变格式。遇到异常可在 GitHub 提交问题，请不要附带账号凭据或私密对话。</p></details>
+      <details><summary>我已经安装了 Token Monitor，会冲突吗？<span>+</span></summary><p>Mac Notch 从 Token Monitor 的本地定制原型中独立提取，只保留刘海和两个工具的额度显示，有自己的入口和配置目录。使用时请退出另一套刘海工具，避免重叠。部分代码与图标沿用 Token Monitor，并保留 MIT 许可及来源声明。</p></details>
+      <details><summary>一键安装会做什么？后面怎么升级或卸载？<span>+</span></summary><p>脚本从本项目 GitHub Release 下载固定版本 ZIP，核对 SHA-256、签名完整性和应用身份后，安装到用户的 Applications 目录。不会自动覆盖已有应用或关闭安全保护；发现已安装版本时会说明下一步。当前没有自动更新，升级请查看 Release。退出应用后删除 Mac Notch.app 即可移除程序，个人配置不会被安装脚本删除。</p></details>
+    </div></section>
+
+    <section class="closing shell"><div class="closing-companions" aria-hidden="true"><img src="./assets/claude.svg" alt=""><span>+</span><img src="./assets/codex.svg" alt=""></div><h2>让它们忙。<br>把注意力留给你。</h2><a class="button" href="#install">带两位搭子回家 <svg><use href="#arrow"/></svg></a><a class="closing-source" href="https://github.com/a1014709897-sketch/mac-notch">MIT 开源，每一行都看得见 ↗</a></section>
+  </main>
+  <footer class="shell site-footer"><div><a class="brand" href="#"><span class="brand-notch"><i></i><i></i></span>Mac Notch</a><p>小小的陪伴，刚好的存在。</p></div><div class="footer-links"><a href="https://github.com/a1014709897-sketch/mac-notch">GitHub</a><a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">Release</a><a href="https://github.com/a1014709897-sketch/mac-notch/issues">反馈问题</a><a href="https://github.com/a1014709897-sketch/mac-notch/blob/main/THIRD_PARTY_NOTICES.md">来源与致谢</a></div><p class="footer-legal">独立开源项目，非 Anthropic 或 OpenAI 官方产品。Claude、Codex 及相关标识归各自权利人所有。<br>部分代码与工具图标源自 <a href="https://github.com/Javis603/token-monitor">Token Monitor</a>，遵循 MIT 许可。</p></footer>
+</body>
+</html>

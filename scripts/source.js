@@ -13,6 +13,7 @@ const entries = [
   "scripts",
   "tests",
   "docs",
+  "site",
   ".github",
   "README.md",
   "LICENSE",

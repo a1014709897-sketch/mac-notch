@@ -2,6 +2,8 @@
 
 A small macOS companion for **Claude and Codex**: animated task status at the notch, subscription quotas in the menu bar. 本项目第一期仅支持 macOS。
 
+**[产品官网与交互演示](https://a1014709897-sketch.github.io/mac-notch/)** · **[下载](https://github.com/a1014709897-sketch/mac-notch/releases/latest)**
+
 > v0.1.0：独立提取版。原型来自 Token Monitor 的本地定制；此仓库具有独立入口、配置目录与构建流程。没有 Token 历史账单、同步服务器或多供应商仪表盘。
 
 ## 预览
@@ -28,6 +30,14 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 ## 下载
 
 [GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。首发使用 ad-hoc 签名，尚未 Apple Developer ID 公证。
+
+也可以把这条命令发给有终端权限的 Agent，或在自己的 Mac 终端运行：
+
+```sh
+curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash
+```
+
+[安装脚本](site/install.sh) 固定下载 v0.1.0，检查系统、SHA-256、应用身份和签名完整性后安装到 `~/Applications`。无需 sudo；不会覆盖已有应用，也不会关闭 macOS 安全保护。安装后从用户 Applications 文件夹打开。仅验证不安装可在命令末尾使用 `bash -s -- --verify-only`。网站源码、部署和域名配置见 [网站维护说明](docs/WEBSITE.md)。
 
 ## 快速开始
 
