@@ -369,13 +369,15 @@ module.exports = async function smoke({
     togglePanel(); await changeSetting("swap-gestures", false); panel.hide();
     state.sessions.clear(); notifications.clear();
     state.update([{provider:"codex",id:"assistance-smoke",state:"running"}]);
-    state.update([{provider:"codex",id:"assistance-smoke",state:"waiting",waitingIds:["question-one"],waitingPrompts:{"question-one":"请选择这次通知的显示方式。"}}]);
+    state.update([{provider:"codex",id:"assistance-smoke",state:"waiting",waitingIds:["question-one"],notification:{title:"协助通知样式确认"},waitingPrompts:{"question-one":"请选择这次通知的显示方式。"}}]);
     notifications.observe([...state.sessions.values()]); syncNotification(); await wait();
     const assistanceChecks = [notifications.current?.kind === "waiting",
+      await notch.webContents.executeJavaScript(`getComputedStyle(document.querySelector("#notch .question")).visibility === "hidden" && document.querySelector("#notification-title-text").textContent === "协助通知样式确认" && document.querySelector("#notification-status").className === "question"`),
       await notch.webContents.executeJavaScript(`document.querySelector('#notification-description').textContent === '请选择这次通知的显示方式。'`)];
     if (out) fs.writeFileSync(path.join(out,"notification-waiting.png"),(await notch.webContents.capturePage()).toPNG());
     await notch.webContents.executeJavaScript(`document.querySelector('#notification-close').click()`); await wait();
     assistanceChecks.push(!notifications.current && state.sessions.get("codex:assistance-smoke").state === "waiting");
+    assistanceChecks.push(await notch.webContents.executeJavaScript(`getComputedStyle(document.querySelector("#notch .question")).visibility === "visible"`));
     notifications.observe([...state.sessions.values()]); syncNotification(); assistanceChecks.push(!notifications.current);
     state.update([{provider:"codex",id:"assistance-smoke",state:"running"}]);
     state.update([{provider:"codex",id:"assistance-smoke",state:"waiting",waitingIds:["question-two"]}]);

@@ -187,6 +187,8 @@ async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
     )
       rows.push({ provider: "claude", id: r.sessionId, state: "ended", notification: r.notification });
   }
+  for (const row of rows)
+    if (row.provider === "claude" && !row.notification) row.notification = complete.notificationFor(row.id);
   return rows;
 }
 module.exports = { readActivity, codexFiles };

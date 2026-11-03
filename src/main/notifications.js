@@ -12,12 +12,12 @@ function claudeNotification(data) {
     (data.postTurnSummaryFor || summary.summarizes_uuid) === data.lastAssistantUuid;
   return {
     desktopId: /^local_[A-Za-z0-9-]{1,64}$/.test(data.sessionId) ? data.sessionId : null,
-    title: clean(data.title, 160) || "任务已完成",
+    title: clean(data.title, 160) || "Claude 会话",
     description: current ? notificationText(summary.status_detail || summary.description) : "",
   };
 }
 function codexNotification(id, title, description) {
-  return { desktopId: id, title: clean(title, 160) || "任务已完成",
+  return { desktopId: id, title: clean(title, 160) || "Codex 会话",
     description: notificationText(description) };
 }
 function sessionURL(desktopId, provider = "claude") {
@@ -82,21 +82,22 @@ class NotificationQueue {
       this.seen.set(key, now);
       this.pending.push({ key, kind: "ended", duration: DURATION, provider: row.provider, sessionId: row.id,
         desktopId: row.notification?.desktopId || null,
-        title: row.notification?.title || "任务已完成",
+        title: clean(row.notification?.title, 160) || `${row.provider === "claude" ? "Claude" : "Codex"} 会话`,
         description: row.notification?.description || "本轮处理已结束。", createdAt: now });
     }
     for (const { row, event, key } of waiting) {
+      const title = clean(row.notification?.title, 160) || `${row.provider === "claude" ? "Claude" : "Codex"} 会话`;
       const description = notificationText(event.description) || "请回到会话回答问题或确认下一步。";
       // A partial reply updates the same card without replaying or restarting it.
-      if (this.current?.key === key) this.current.description = description;
+      if (this.current?.key === key) Object.assign(this.current, { title, description });
       const queued = this.pending.find(item => item.key === key);
-      if (queued) queued.description = description;
+      if (queued) Object.assign(queued, { title, description });
       if (this.seen.has(key)) continue;
       this.seen.set(key, now);
       if (!event.notify || !this.waitingEnabled || row.provider === foreground || now - event.at > 60000) continue;
       this.pending.push({ key, kind: "waiting", duration: 8000, provider: row.provider,
         sessionId: row.id, desktopId: row.notification?.desktopId || null,
-        title: "需要你处理", description, createdAt: now });
+        title, description, createdAt: now });
     }
     this.pending.sort((a, b) => Number(b.kind === "waiting") - Number(a.kind === "waiting"));
     this.pending = this.pending.slice(0, 20);

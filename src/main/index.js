@@ -497,7 +497,7 @@ app.whenReady().then(async () => {
     setExpanded(false);
     notifications.pending.unshift({ key: `preview:${Date.now()}`, preview: true, kind,
       duration: kind === "waiting" ? 8000 : 5000, provider: "codex", createdAt: Date.now(),
-      title: kind === "waiting" ? "需要你处理" : "本轮任务已完成",
+      title: "Mac Notch 体验优化",
       description: kind === "waiting" ? "请选择接下来执行的方案。" : "已整理好结果，可以回到会话查看。" });
     syncNotification();
   });

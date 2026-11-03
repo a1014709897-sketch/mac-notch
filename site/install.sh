@@ -5,9 +5,9 @@
 set -euo pipefail
 
 main() {
-  local version="0.2.2"
-  local arm64_checksum="988c6d296ce0d4be6cd29ccc54d4b4676565c59218ff819a17f8836bc712732e"
-  local x64_checksum="875b1b0372c6f894b8d0c387936d1034355359ab3d81c7504e174d3d5f4657d4"
+  local version="0.2.3"
+  local arm64_checksum="d7c8cd817fd5f380c0534385658ed1640b2827f87ce74526248af1dd13de2aaf"
+  local x64_checksum="b3f0af8361715350638697e41e8c4471af9c78136c4c786053330f311e31ddbd"
   local architecture checksum url
   local bundle_id="io.github.a1014709897-sketch.macnotch"
   local verify_only=0
@@ -16,7 +16,7 @@ main() {
     --help|-h)
       printf '%s\n' 'Mac Notch installer — macOS 13+, Apple Silicon and Intel' \
         'Usage: bash install.sh [--verify-only]' \
-        'Installs v0.2.2 into ~/Applications; existing apps are never overwritten.' \
+        'Installs v0.2.3 into ~/Applications; existing apps are never overwritten.' \
         '--verify-only: download and verify the release without installing or launching.'
       return 0 ;;
     '') ;;
@@ -48,7 +48,7 @@ main() {
   if [ "$verify_only" = "0" ] && { [ -e "$dest" ] || [ -L "$dest" ]; }; then
     printf '%s\n' "An application already exists at: $dest" \
       'Nothing was replaced. Quit and move the existing app before reinstalling.' \
-      'Release notes: https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.2'
+      'Release notes: https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.3'
     return 0
   fi
   local workspace

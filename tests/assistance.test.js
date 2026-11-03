@@ -13,7 +13,8 @@ test('startup waiting is a baseline, new questions alert once, dismissing does n
   const h = harness();
   assert.equal(h.scan([row('waiting', { waitingIds: ['a'] })], 1000), null);
   assert.equal(h.scan([row('waiting', { waitingIds: ['a'] })], 2000), null);
-  const notice = h.scan([row('waiting', { waitingIds: ['a', 'b'] })], 3000);
+  const notice = h.scan([row('waiting', { waitingIds: ['a', 'b'], notification: {title: '发布方案确认'} })], 3000);
+  assert.equal(notice.title, '发布方案确认');
   assert.equal(notice.kind, 'waiting'); assert.equal(notice.duration, 8000);
   h.queue.dismiss(notice.key);
   assert.equal(h.state.snapshot()[1].state, 'waiting');

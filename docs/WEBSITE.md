@@ -23,7 +23,7 @@ Open http://127.0.0.1:4173. Rebuild and reload after changing files. The build v
 curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash
 ```
 
-The script is readable at the same URL and in `site/install.sh`. It downloads the **fixed v0.2.2 prerelease** Apple Silicon or Intel ZIP from GitHub Releases, selected by hardware architecture (including Apple Silicon shells under Rosetta), and compares it against the architecture-specific SHA-256 recorded in source. It verifies the bundle ID, version, and ad-hoc signature integrity before copying into `~/Applications`. It does not request root, overwrite an existing app, launch it, delete settings, modify proxy settings, or change Gatekeeper/quarantine attributes. Ad-hoc integrity validation is not Apple Developer ID notarization.
+The script is readable at the same URL and in `site/install.sh`. It downloads the **fixed v0.2.3 prerelease** Apple Silicon or Intel ZIP from GitHub Releases, selected by hardware architecture (including Apple Silicon shells under Rosetta), and compares it against the architecture-specific SHA-256 recorded in source. It verifies the bundle ID, version, and ad-hoc signature integrity before copying into `~/Applications`. It does not request root, overwrite an existing app, launch it, delete settings, modify proxy settings, or change Gatekeeper/quarantine attributes. Ad-hoc integrity validation is not Apple Developer ID notarization.
 
 For a download and validation run without installation:
 
@@ -31,7 +31,7 @@ For a download and validation run without installation:
 curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash -s -- --verify-only
 ```
 
-On release updates, update version/hash in the script, the website's platform/version text, and installer fixture values together. Check the published GitHub asset digest, test on macOS, and deploy. The installation script intentionally does not select an unverified "latest" binary dynamically. Manual download links point explicitly to `releases/tag/v0.2.2`; GitHub latest does not select prereleases.
+On release updates, update version/hash in the script, the website's platform/version text, and installer fixture values together. Check the published GitHub asset digest, test on macOS, and deploy. The installation script intentionally does not select an unverified "latest" binary dynamically. Manual download links point explicitly to `releases/tag/v0.2.3`; GitHub latest does not select prereleases.
 
 ## Custom domain
 

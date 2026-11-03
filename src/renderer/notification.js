@@ -18,13 +18,16 @@ function renderNotification(value) {
   document.body.classList.toggle("notifying", Boolean(value));
   notificationElement.hidden = !value;
   notificationElement.dataset.kind = value?.kind || "ended";
+  const badge = document.querySelector("#notification-status");
+  badge.className = !value ? "" : value.kind === "waiting" ? "question" : "check";
+  badge.textContent = value?.kind === "waiting" ? "?" : "";
   if (!value) { cancelAnimationFrame(countdownFrame); return; }
   const source = value.provider === "codex" ? "Codex" : "Claude";
   document.querySelector("#notification-source").textContent = source;
   notificationElement.setAttribute("aria-label", `${source} 通知`);
-  document.querySelector("#notification-title").textContent = value.title;
+  document.querySelector("#notification-title-text").textContent = value.title;
   document.querySelector("#notification-description").textContent = value.description;
-  notificationBody.setAttribute("aria-label", `${source}，${value.title}，${value.description}，点击打开会话`);
+  notificationBody.setAttribute("aria-label", `${source}，${value.title}，${value.kind === "waiting" ? "需要你处理" : "任务已完成"}，${value.description}，点击打开会话`);
   if (changed) {
     // A new card can appear beneath an already stationary pointer.
     macNotch.notification("hover", value.key, notificationElement.matches(":hover"));

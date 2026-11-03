@@ -9,7 +9,7 @@ const { claudeNotification } = require('../../../../../main/notifications');
 function createDesktopCompletionReader(root = path.join(os.homedir(), 'Library/Application Support/Claude/claude-code-sessions')) {
   const seen = new Map();
   let lastRead = 0, cached = [];
-  return function read(now = Date.now()) {
+  function read(now = Date.now()) {
     if (now - lastRead < 2000) return cached;
     lastRead = now;
     const result = [];
@@ -32,7 +32,7 @@ function createDesktopCompletionReader(root = path.join(os.homedir(), 'Library/A
               const old = seen.get(d.cliSessionId);
               const complete = Boolean(old && old.turn === turn && (old.complete || count > old.count)
                 && !d.interruptedAwaitingPerson);
-              seen.set(d.cliSessionId, { turn, count, complete });
+              seen.set(d.cliSessionId, { turn, count, complete, notification: claudeNotification(d) });
               if (complete) result.push({ client: 'claude', sessionId: d.cliSessionId,
                 notification: claudeNotification(d), turnEnded: true, lastUsedAt: new Date(now).toISOString() });
             } catch (_) { /* Partial writes do not manufacture completion. */ }
@@ -42,6 +42,8 @@ function createDesktopCompletionReader(root = path.join(os.homedir(), 'Library/A
     } catch (_) { /* Missing metadata does not mean success. */ }
     cached = result;
     return result;
-  };
+  }
+  read.notificationFor = id => seen.get(id)?.notification || null;
+  return read;
 }
 module.exports = { createDesktopCompletionReader };

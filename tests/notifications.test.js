@@ -64,6 +64,7 @@ test("desktop metadata completion feeds real title and current summary without r
   const write = () => fs.writeFileSync(file, JSON.stringify(data)); write();
   const read = createDesktopCompletionReader(root);
   assert.deepEqual(read(10000), []);
+  assert.equal(read.notificationFor("cli-test").title, "真实会话标题");
   data.completedTurns++; write();
   const rows = read(12000); assert.equal(rows.length, 1);
   assert.deepEqual(rows[0].notification, { desktopId: "local_test", title: "真实会话标题", description: "本轮完成摘要" });
@@ -75,8 +76,12 @@ test("Claude and Codex share the queue without colliding; disabling one retains 
   const claude = row("same"), codex = { ...row("same"), provider: "codex" };
   q.observe([claude, codex], 1000); q.tick(1000);
   assert.equal(q.current.provider, "claude");
+  assert.equal(q.current.title, "方案已生成");
+  assert.equal(q.current.description, "布局与说明已整理。");
   q.retain(["codex"]); q.tick(1100);
   assert.equal(q.current.provider, "codex");
+  assert.equal(q.current.title, "方案已生成");
+  assert.equal(q.current.description, "布局与说明已整理。");
   q.dismiss(q.current.key); q.observe([codex], 1200); assert.equal(q.tick(1200), null);
   const id = "01a1a06a-be28-75b0-a87f-67cb63e99502";
   assert.equal(sessionURL(id, "codex"), `codex://threads/${id}`);

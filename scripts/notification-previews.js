@@ -15,7 +15,7 @@ app.whenReady().then(async () => {
   for (const kind of ['waiting', 'ended']) {
     const notification = { key: 'preview', provider: 'codex', kind, duration: kind === 'waiting' ? 8000 : 5000,
       remaining: kind === 'waiting' ? 8000 : 5000, expiresAt: null,
-      title: kind === 'waiting' ? '需要你处理' : '本轮任务已完成',
+      title: 'Mac Notch 体验优化',
       description: kind === 'waiting' ? '请选择接下来执行的方案。' : '已整理好结果，可以回到会话查看。' };
     await win.webContents.executeJavaScript(`render(${JSON.stringify({ tasks: [{ provider: 'codex', state: kind }], settings: {}, geometry: {height:32}, expanded:false, notification })})`);
     await new Promise(resolve => setTimeout(resolve, 150));
