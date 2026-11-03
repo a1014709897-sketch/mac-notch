@@ -4,6 +4,8 @@ Production: https://a1014709897-sketch.github.io/mac-notch/
 
 `site/` is a buildless Chinese product site. All visual assets, scripts and styles are local. There are no analytics, external fonts, sign-ins or runtime API calls. The notch and quota UI is an explicitly labeled simulation; it does not read client state or launch installed apps from the browser.
 
+Content and layout decisions are recorded in [网站设计复盘](DESIGN_REVIEW.md). Product illustration and animation styles live in `site/demo.css`; the shared page grid, typography, controls and responsive layout live in `site/styles.css`.
+
 ## Preview and deploy
 
 ```sh
@@ -52,7 +54,7 @@ ICP filing and domain registration are separate. For non-mainland hosting, an un
 - Desktop and mobile: no horizontal overflow, navigation and typography readable, download/script links work under `/mac-notch/`.
 - Cycle idle/running/waiting/ended, switch tool, verify notch width unchanged and three dots on both tools.
 - Idle always shows both companions. A single active tool has a full-bar click target.
-- Double click opens the simulated quota panel; Escape, close and outside click dismiss it. Focus a notch button and press Q for keyboard access.
+- The quota button, double click, or Q while a notch button is focused opens the simulated quota panel; Escape, close and outside click dismiss it. Verify focus returns to the trigger after Escape and the quota button's expanded state updates.
 - Clipboard button copies the exact published command; permission failure selects the command and explains manual copy.
 - FAQ opens with keyboard, animation can be paused, and system reduced motion is respected.
 - Public installer downloads and verifies the real published ZIP with `--verify-only`.

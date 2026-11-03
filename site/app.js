@@ -6,14 +6,15 @@
   const toast = document.querySelector("#demo-toast");
   const motionButton = document.querySelector("#motion-toggle");
   const copyButton = document.querySelector("#copy-command");
+  const quotaButton = document.querySelector("#preview-quotas");
   let state = "running", tool = "both", clickTimer, toastTimer, copyTimer;
   let lastQuotaTrigger = null;
   const names = { both: "Claude + Codex", claude: "Claude", codex: "Codex" };
   const descriptions = {
-    idle: ["都在这里，随时开工。", "两位小搭档安静待命，不展开，不打断。", "没有任务时，两位小伙伴常驻。悬停不展开，单击即可回到客户端。"],
-    running: ["各忙各的，也配合默契。", "Claude 在梳理思路，Codex 在实现代码。", "小怪兽轻跳，Codex 旋转。三个小点告诉你，它们还在忙。"],
-    waiting: ["有个决定，留给你。", "淡金色问号，提醒你回到客户端协助。", "问号会等到实际回答或任务继续后才消失。仅点击打开客户端，不会当作已协助。"],
-    ended: ["这轮搞定，等你来看。", "一个轻轻的勾，留住刚刚完成的进展。", "完成后显示细线勾。应用依据具体会话的已读信号消除提醒，不会批量清空其他任务。"],
+    idle: ["暂无进行中的任务", "随时可以开始新的任务"],
+    running: ["正在制作产品官网", "页面设计与功能实现"],
+    waiting: ["请选择一个方案", "等待你确认页面样式"],
+    ended: ["产品官网已完成", "回到客户端查看结果"],
   };
   const indicators = {
     idle: "",
@@ -34,19 +35,30 @@
       el.setAttribute("aria-pressed", String(el.dataset.tool === tool));
       el.disabled = state === "idle" && el.dataset.tool !== "both";
     });
-    const [title, description, caption] = descriptions[state];
+    const [title, description] = descriptions[state];
     document.querySelector("#client-name").textContent = names[visibleTool];
-    document.querySelector("#work-title").textContent = state === "running" && tool !== "both" ? `${names[tool]} 正在专心工作。` : title;
-    document.querySelector("#work-description").textContent = state === "running" && tool !== "both" ? "你继续手头的事，抬眼就能看到进度。" : description;
-    document.querySelector("#state-caption").textContent = caption;
+    document.querySelector("#work-title").textContent = title;
+    document.querySelector("#work-description").textContent = description;
+    const stateLabel = document.querySelector(`.state-controls button[data-state="${state}"]`).textContent;
+    document.querySelector("#demo-status").textContent = `${names[visibleTool]}：${stateLabel}`;
     document.querySelector(".window-claude").hidden = visibleTool === "codex";
     document.querySelector(".window-codex").hidden = visibleTool === "claude";
   }
   function closeQuota(restoreFocus = false) {
     if (quota.hidden) return;
     quota.hidden = true;
+    quotaButton.setAttribute("aria-expanded", "false");
     if (restoreFocus && lastQuotaTrigger && !lastQuotaTrigger.hidden) lastQuotaTrigger.focus();
   }
+  function toggleQuota(trigger) {
+    clearTimeout(clickTimer);
+    if (!quota.hidden) { closeQuota(true); return; }
+    lastQuotaTrigger = trigger;
+    quota.hidden = false;
+    quotaButton.setAttribute("aria-expanded", "true");
+    document.querySelector("#close-quotas").focus();
+  }
+  quotaButton.addEventListener("click", () => toggleQuota(quotaButton));
   function showToast(message) {
     clearTimeout(toastTimer);
     toast.textContent = message;
@@ -78,27 +90,24 @@
   notch.addEventListener("click", openClient);
   notch.addEventListener("dblclick", event => {
     clearTimeout(clickTimer); event.preventDefault();
-    lastQuotaTrigger = event.target.closest("button") || notch.querySelector("button");
-    quota.hidden = !quota.hidden;
-    if (!quota.hidden) document.querySelector("#close-quotas").focus();
+    toggleQuota(event.target.closest("button") || notch.querySelector("button"));
   });
   // Keyboard users can open the same quota preview without a double click.
   notch.addEventListener("keydown", event => {
     if (event.key.toLowerCase() === "q") {
       event.preventDefault(); clearTimeout(clickTimer);
-      lastQuotaTrigger = event.target.closest("button"); quota.hidden = false;
-      document.querySelector("#close-quotas").focus();
+      toggleQuota(event.target.closest("button"));
     }
   });
   document.querySelector("#close-quotas").addEventListener("click", () => closeQuota(true));
   document.addEventListener("keydown", event => { if (event.key === "Escape") closeQuota(true); });
-  document.addEventListener("click", event => { if (!quota.contains(event.target) && !notch.contains(event.target)) closeQuota(); });
+  document.addEventListener("click", event => { if (!quota.contains(event.target) && !notch.contains(event.target) && !quotaButton.contains(event.target)) closeQuota(); });
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   function setMotion(paused) {
     document.body.classList.toggle("motion-paused", paused);
     motionButton.setAttribute("aria-pressed", String(paused));
-    motionButton.textContent = paused ? "继续动画 ▷" : "暂停动画 Ⅱ";
-    if (reducedMotion.matches) motionButton.textContent = "已遵循减少动态效果";
+    motionButton.textContent = paused ? "继续动画" : "暂停动画";
+    if (reducedMotion.matches) motionButton.textContent = "动画已关闭";
     motionButton.disabled = reducedMotion.matches;
   }
   setMotion(reducedMotion.matches);
@@ -110,16 +119,16 @@
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
       await navigator.clipboard.writeText(command);
       clearTimeout(copyTimer); copyButton.classList.add("copied");
-      copyButton.querySelector("span").textContent = "已复制，发给你的 Agent";
+      copyButton.querySelector("span").textContent = "已复制";
       document.querySelector("#copy-result").textContent = "安装命令已复制到剪贴板。";
       copyTimer = setTimeout(() => {
-        copyButton.classList.remove("copied"); copyButton.querySelector("span").textContent = "复制安装命令";
+        copyButton.classList.remove("copied"); copyButton.querySelector("span").textContent = "复制命令";
       }, 3500);
     } catch {
       const range = document.createRange(); range.selectNodeContents(document.querySelector("#install-command"));
       window.getSelection().removeAllRanges(); window.getSelection().addRange(range);
       document.querySelector("#copy-result").textContent = "剪贴板权限不可用，已选中命令，请手动复制。";
-      copyButton.querySelector("span").textContent = "已选中命令，请按 ⌘C 复制";
+      copyButton.querySelector("span").textContent = "按 ⌘C 复制";
     }
   });
   render();
