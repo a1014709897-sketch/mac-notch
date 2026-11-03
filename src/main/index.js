@@ -17,7 +17,9 @@ const { execFile } = require("node:child_process");
 const { TaskState, PROVIDERS } = require("./state");
 const { readActivity } = require("./activity");
 const { readQuota, remaining } = require("./quotas");
-const { layout, expandedLayout } = require("./layout");
+const { NotificationQueue, sessionURL } = require("./notifications");
+const notifications = new NotificationQueue();
+const { taskLayout, layout, expandedLayout, notificationLayout } = require("./layout");
 const { Worker } = require("node:worker_threads");
 const { summarize } = require("./usage");
 const { createStore } = require("./store");
@@ -26,6 +28,7 @@ const {
 } = require("../vendor/token-monitor/src/electron/notch/screen");
 const {
   frontmostTool,
+  createVisitAttention,
 } = require("../vendor/token-monitor/src/electron/notch/taskAttention");
 const {
   createTaskReadState,
@@ -51,12 +54,14 @@ let notch,
   panel,
   store,
   transport,
+  baseGeometry,
   geometry,
   locked = false,
   busy = false,
   quotalock = false,
   lastRender = "",
   attentionTimer,
+  notificationTimer,
   scanTimer,
   quotaTimer,
   usageWorker,
@@ -67,6 +72,7 @@ let usage = { ...summarize([]), loading: true };
 const enabled = () => PROVIDERS.filter((p) => store.public().providers[p]);
 const state = new TaskState(),
   readState = createTaskReadState(),
+  visitAttention = createVisitAttention(),
   trays = new Map();
 let quotas = {
   claude: { provider: "claude", windows: [], error: "尚未刷新" },
@@ -81,9 +87,11 @@ function payload() {
   return {
     tasks: state.snapshot().filter((t) => enabled().includes(t.provider)),
     quotas,
+    remainingQuota: Object.fromEntries(PROVIDERS.map(p => [p, remaining(quotas[p])])),
     settings: store.public(),
     geometry,
     expanded,
+    notification: expanded || locked ? null : notifications.current,
     usage,
     version: app.getVersion(),
     demo,
@@ -91,6 +99,13 @@ function payload() {
 }
 function render() {
   if (!notch || notch.isDestroyed()) return;
+  if (baseGeometry) {
+    const nextGeometry = taskLayout(baseGeometry, state.snapshot().filter(t => enabled().includes(t.provider)));
+    if (nextGeometry.width !== geometry.width) {
+      geometry = nextGeometry;
+      applyBounds();
+    }
+  }
   const data = payload(),
     encoded = JSON.stringify(data);
   if (encoded !== lastRender) {
@@ -113,9 +128,10 @@ function position() {
         String(d.id) === String(notched?.displayId || native.mainDisplayId),
     ) || screen.getPrimaryDisplay();
   currentDisplay = display;
-  geometry = layout(
+  baseGeometry = geometry = layout(
     display,
     native.screens?.find((s) => String(s.displayId) === String(display.id)),
+    store.public().idleQuota,
   );
   applyBounds();
   lastRender = "";
@@ -123,7 +139,10 @@ function position() {
 }
 function applyBounds() {
   if (!geometry) return;
-  const bounds = expanded ? expandedLayout(currentDisplay, geometry) : geometry;
+  const bounds = expanded ? expandedLayout(currentDisplay, geometry)
+    : notifications.current && !locked ? notificationLayout(currentDisplay, geometry) : geometry;
+  const current = notch.getBounds();
+  if (["x", "y", "width", "height"].every(key => current[key] === bounds[key])) return;
   notch.setBounds({
     x: bounds.x,
     y: bounds.y,
@@ -136,6 +155,8 @@ function togglePanel() {
 }
 function setExpanded(value) {
   expanded = value;
+  notifications.pause("dashboard", value);
+  if (value) { notifications.pause("hover", false); notifications.pause("focus", false); }
   notch.setFocusable(expanded);
   applyBounds();
   render();
@@ -151,18 +172,65 @@ function showSettings() {
   panel.focus();
   panel.webContents.send("state", payload());
 }
+let lastNotification = "";
+function notificationForeground() {
+  return demo || smoke ? null : frontmostTool();
+}
+function syncNotification(foreground) {
+  // Read current focus at the presentation boundary, before resizing the notch.
+  if ((notifications.current || notifications.pending.length) &&
+      (!(demo || smoke) || foreground === undefined))
+    foreground = notificationForeground();
+  notifications.tick(Date.now(), foreground);
+  const key = JSON.stringify([notifications.current, expanded, locked]);
+  if (key === lastNotification) return;
+  lastNotification = key;
+  applyBounds();
+  render();
+}
+function acknowledgeVisits(foreground, now = Date.now()) {
+  const completed = state.completed();
+  for (const task of [...readState(completed, foreground), ...visitAttention(completed, foreground, now)])
+    state.acknowledge(task.provider, task.id);
+  notifications.observe([...state.sessions.values()], now, foreground);
+  syncNotification(foreground);
+  render();
+}
+function openNotification(key) {
+  const item = notifications.current;
+  if (!item || item.key !== key) return;
+  const url = sessionURL(item.desktopId, item.provider);
+  // Smoke exercises the actual IPC without navigating the user's real Claude app.
+  if (smoke) {
+    notch.webContents.send("notification:opened", { key, url });
+    notifications.dismiss(key); applyBounds(); render(); return;
+  }
+  if (!url) {
+    openTool(item.provider);
+    notifications.dismiss(key); applyBounds(); render(); return;
+  }
+  execFile("/usr/bin/open", ["-b", bundles[item.provider], url], (error) => {
+    if (error) {
+      panel.webContents.send("notice", `未能打开 ${item.provider === "codex" ? "Codex" : "Claude"} 会话，请检查客户端是否已安装。`);
+      return;
+    }
+    // A successful open request is not proof that this particular task was read.
+    notifications.dismiss(key); applyBounds(); render();
+  });
+}
 function openTool(provider) {
   if (!bundles[provider]) return;
+  const completedAtClick = state.completed();
   execFile("/usr/bin/open", ["-b", bundles[provider]], (error) => {
     if (error) {
-      showSettings();
       panel.webContents.send(
         "notice",
         `未能打开 ${provider}，请先安装官方客户端`,
       );
       return;
     }
-    // Activation alone cannot tell which completed conversation was viewed.
+    // Wait for foreground confirmation; match only the selected Claude session.
+    readState.didActivate(provider, completedAtClick);
     render();
   });
 }
@@ -173,18 +241,17 @@ function menu(provider) {
       click: () => openTool(provider),
     },
     { label: "用量与额度", click: togglePanel },
-    { label: "设置工具", click: showSettings },
     { label: "刷新额度", click: () => refreshQuotas() },
     { type: "separator" },
     { label: "退出 Mac Notch", click: () => app.quit() },
   ]);
 }
-function syncProviders() {
+function syncProviders({ refilterUsage = true } = {}) {
   for (const tray of trays.values()) tray.destroy();
   trays.clear();
   fallbackTray?.destroy();
   fallbackTray = null;
-  for (const provider of [...enabled()].reverse()) {
+  for (const provider of [...enabled()].reverse().filter(p => store.public().menuBar[p])) {
     const image = nativeImage
       .createFromPath(path.join(__dirname, "../../assets", `${provider}.png`))
       .resize({ width: 20, height: 20 });
@@ -195,6 +262,8 @@ function syncProviders() {
     tray.on("right-click", () => tray.popUpContextMenu(menu(provider)));
     updateTray(provider);
   }
+  notifications.retain(enabled());
+  applyBounds();
   for (const [key, row] of state.sessions)
     if (!enabled().includes(row.provider)) state.sessions.delete(key);
   if (!enabled().length) {
@@ -203,19 +272,19 @@ function syncProviders() {
       .resize({ width: 18, height: 18 });
     image.setTemplateImage(true);
     fallbackTray = new Tray(image);
-    fallbackTray.setToolTip("Mac Notch · 工具已关闭，点此设置");
-    fallbackTray.on("click", showSettings);
+    fallbackTray.setToolTip("Mac Notch · 工具已关闭，请打开应用设置");
+
     fallbackTray.on("right-click", () =>
       fallbackTray.popUpContextMenu(
         Menu.buildFromTemplate([
-          { label: "设置工具", click: showSettings },
-          { label: "退出 Mac Notch", click: () => app.quit() },
+                { label: "退出 Mac Notch", click: () => app.quit() },
         ]),
       ),
     );
     setExpanded(false);
     notch.hide();
   } else if (!locked) notch.showInactive();
+  if (!refilterUsage) return;
   usageWorker?.postMessage({ enabled: enabled() });
   // Do not display the previous provider's totals while the worker refilters.
   usage = { ...summarize([]), loading: !(demo || smoke) };
@@ -241,12 +310,16 @@ function updateTray(provider) {
     `${provider === "claude" ? "Claude" : "Codex"} · ${q.error || "剩余额度（最紧张窗口）"}${q.stale ? " · 缓存值" : ""}`,
   );
 }
-async function refreshQuotas() {
-  if (quotalock) return;
+const queuedQuotaProviders = new Set();
+async function refreshQuotas(providers = enabled()) {
+  if (quotalock) {
+    for (const provider of providers) queuedQuotaProviders.add(provider);
+    return;
+  }
   quotalock = true;
   try {
     await Promise.all(
-      enabled().map(async (provider) => {
+      providers.filter(provider => enabled().includes(provider)).map(async (provider) => {
         if (demo || smoke)
           quotas[provider] = {
             provider,
@@ -283,6 +356,11 @@ async function refreshQuotas() {
     render();
   } finally {
     quotalock = false;
+    if (queuedQuotaProviders.size) {
+      const queued = [...queuedQuotaProviders];
+      queuedQuotaProviders.clear();
+      void refreshQuotas(queued);
+    }
   }
 }
 async function scan() {
@@ -295,6 +373,9 @@ async function scan() {
           enabled().includes(r.provider),
         ),
       );
+    const foreground = notificationForeground();
+    notifications.observe([...state.sessions.values()], Date.now(), foreground);
+    syncNotification(foreground);
     render();
   } catch {
     /* Keep bounded previous observations; never log transcript data. */ state.update(
@@ -316,6 +397,7 @@ function protect(win) {
 app.whenReady().then(async () => {
   app.dock.hide();
   store = createStore(app.getPath("userData"), safeStorage);
+  notifications.setEnabled(store.public().notifications);
   transport = session.fromPartition("mac-notch-network");
   await transport.setProxy(
     store.public().proxy
@@ -353,7 +435,7 @@ app.whenReady().then(async () => {
   protect(notch);
   panel = new BrowserWindow({
     width: 400,
-    height: 560,
+    height: 720,
     show: false,
     titleBarStyle: "hiddenInset",
     title: "Mac Notch · 设置",
@@ -380,14 +462,20 @@ app.whenReady().then(async () => {
     }
   });
   ipcMain.handle("state:get", (event) => (own(event) ? payload() : null));
+  for (const action of ["dismiss", "open", "hover", "focus"]) {
+    ipcMain.on(`notification:${action}`, (event, key, value) => {
+      if (event.sender !== notch.webContents || key !== notifications.current?.key) return;
+      if (action === "open") return openNotification(key);
+      if (action === "dismiss") notifications.dismiss(key);
+      else notifications.pause(action, value === true);
+      applyBounds(); render();
+    });
+  }
   ipcMain.on("tool:open", (event, provider) => {
     if (own(event)) openTool(provider);
   });
   ipcMain.on("panel:toggle", (event) => {
     if (own(event)) togglePanel();
-  });
-  ipcMain.on("settings:open", (event) => {
-    if (own(event)) showSettings();
   });
   ipcMain.on("settings:close", (event) => {
     if (own(event)) panel.hide();
@@ -407,32 +495,46 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle("settings:save", async (event, value) => {
     if (!own(event)) return { ok: false };
+    const before = store.public();
+    const loginChanged = typeof value?.startAtLogin === "boolean" && value.startAtLogin !== before.startAtLogin;
+    let loginApplied = false;
     try {
+      if (loginChanged && app.isPackaged && !isolated) {
+        app.setLoginItemSettings({ openAtLogin: value.startAtLogin });
+        loginApplied = true;
+      }
       // Renderer may change only user-facing preferences. Legacy encrypted credentials
       // and proxy settings remain compatible, but are no longer editable here.
       const result = store.update({
         providers: value?.providers,
         startAtLogin: value?.startAtLogin,
+        idleQuota: value?.idleQuota,
+        notifications: value?.notifications,
+        menuBar: value?.menuBar,
         setupComplete: value?.setupComplete,
       });
-      await transport.setProxy(
-        result.proxy
-          ? {
-              proxyRules: result.proxy,
-              proxyBypassRules: "<local>;localhost;127.0.0.1",
-            }
-          : { mode: "system" },
-      );
-      if (app.isPackaged && !isolated)
-        app.setLoginItemSettings({ openAtLogin: result.startAtLogin });
-      for (const q of Object.values(quotas)) q.retryAfter = 0;
-      syncProviders();
+      if (before.notifications !== result.notifications) {
+        notifications.setEnabled(result.notifications, [...state.sessions.values()]);
+        syncNotification();
+      }
+      const providersChanged = PROVIDERS.some(p => before.providers[p] !== result.providers[p]);
+      const menuChanged = PROVIDERS.some(p => before.menuBar[p] !== result.menuBar[p]);
+      if (providersChanged || menuChanged) syncProviders({ refilterUsage: providersChanged });
+      if (result.idleQuota !== before.idleQuota) position();
       lastRender = "";
       render();
-      refreshQuotas();
-      return { ok: true };
+      const newlyEnabled = PROVIDERS.filter(p => !before.providers[p] && result.providers[p]);
+      if (newlyEnabled.length) {
+        for (const provider of newlyEnabled) quotas[provider].retryAfter = 0;
+        void refreshQuotas(newlyEnabled);
+        void scan();
+      }
+      return { ok: true, settings: result };
     } catch (e) {
-      return { ok: false, error: e.message };
+      if (loginApplied) {
+        try { app.setLoginItemSettings({ openAtLogin: before.startAtLogin }); } catch {}
+      }
+      return { ok: false, error: e.message, settings: store.public() };
     }
   });
   ipcMain.on("demo:set", (event, value) => {
@@ -471,7 +573,7 @@ app.whenReady().then(async () => {
       };
       render();
     });
-    if (!store.public().setupComplete) showSettings();
+    showSettings();
   } else {
     usage = { ...summarize([]), loading: false };
     usage.days.forEach((d, i) => {
@@ -490,22 +592,25 @@ app.whenReady().then(async () => {
   screen.on("display-removed", position);
   powerMonitor.on("lock-screen", () => {
     locked = true;
+    visitAttention([], null);
+    notifications.clear();
+    notifications.pause("lock", true);
     notch.hide();
     panel.hide();
   });
   powerMonitor.on("unlock-screen", () => {
     locked = false;
+    notifications.pause("lock", false);
     position();
     if (enabled().length) notch.showInactive();
     scan();
   });
-  scanTimer = setInterval(scan, 2000);
+  notificationTimer = setInterval(syncNotification, 100);
+  if (!smoke) scanTimer = setInterval(scan, 2000);
   quotaTimer = setInterval(refreshQuotas, 120000);
   attentionTimer = setInterval(() => {
     if (locked || demo || smoke) return;
-    for (const task of readState(state.completed(), frontmostTool()))
-      state.acknowledge(task.provider, task.id);
-    render();
+    acknowledgeVisits(frontmostTool());
   }, 1000);
   if (smoke)
     setTimeout(
@@ -517,6 +622,10 @@ app.whenReady().then(async () => {
           geometry,
           payload,
           togglePanel,
+          notifications,
+          syncNotification,
+          acknowledgeVisits,
+          state,
           store,
           syncProviders,
           app,
@@ -529,9 +638,12 @@ app.on("before-quit", () => {
   clearInterval(scanTimer);
   clearInterval(quotaTimer);
   clearInterval(attentionTimer);
+  clearInterval(notificationTimer);
   usageWorker?.terminate();
 });
 app.on("window-all-closed", () => {});
 app.on("second-instance", () => {
   if (panel) showSettings();
 });
+
+app.on("activate", () => { if (panel) showSettings(); });

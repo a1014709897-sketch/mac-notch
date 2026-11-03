@@ -67,9 +67,11 @@ test("physical camera gap determines geometry, not content or state", () => {
   };
   const g = layout(d, native);
   assert.equal(g.gap, 185);
-  assert.equal(g.width, 305);
+  assert.equal(g.width, 349);
   assert.equal(g.height, 32);
-  assert.equal(layout(d, null).width, 264);
+  assert.deepEqual(layout(d, native, true), g);
+  assert.deepEqual(layout(d, null, true), layout(d, null, false));
+  assert.equal(layout(d, null).width, 308);
 });
 test("remaining quota is not token usage and zero remains a valid value", () => {
   assert.deepEqual(
@@ -125,4 +127,15 @@ test("all displays attach at top; expanded surface stays below its own camera he
   assert.equal(e.y, g.y);
   assert.ok(e.height > g.height);
   assert.ok(e.width <= d.bounds.width);
+});
+
+test('fixed-size progress reserves more wing space without moving the camera center', () => {
+  const {taskLayout}=require('../src/main/layout');
+  const base={x:100,y:0,width:341,height:32,gap:185,hardware:true};
+  const compact=taskLayout(base,[{state:'running',progress:{done:0,total:2}}]);
+  const large=taskLayout(base,[{state:'running',progress:{done:100,total:128}}]);
+  assert.ok(large.width > compact.width);
+  assert.equal(large.x+large.width/2,base.x+base.width/2);
+  assert.equal(large.height,base.height);
+  assert.deepEqual(taskLayout(base,[{state:'idle'}]),base);
 });

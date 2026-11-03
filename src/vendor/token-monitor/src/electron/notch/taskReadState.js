@@ -6,7 +6,8 @@ const os = require('node:os');
 function createTaskReadState(home = os.homedir(), resolveCodex = id => id, codexRoot = process.env.CODEX_HOME || path.join(home,'.codex')) {
   let previousUnread = new Map();
   const focus = new Map();
-  return (tasks, foreground) => {
+  let activation = null;
+  const readState = (tasks, foreground) => {
     const read = [];
     try {
       const data = JSON.parse(fs.readFileSync(path.join(codexRoot,'.codex-global-state.json'),'utf8'));
@@ -25,6 +26,8 @@ function createTaskReadState(home = os.homedir(), resolveCodex = id => id, codex
         previousUnread = current;
       }
     } catch (_) { /* Missing/partial files never acknowledge tasks. */ }
+    const candidates = [];
+    let metadataComplete = true;
     try {
       const root=path.join(home,'Library/Application Support/Claude/claude-code-sessions');
       for (const account of fs.readdirSync(root,{withFileTypes:true})) {
@@ -35,18 +38,39 @@ function createTaskReadState(home = os.homedir(), resolveCodex = id => id, codex
           for (const file of fs.readdirSync(dir)) {
             if (!/^local_.*\.json$/.test(file)) continue;
             try {
-              const name=path.join(dir,file); if (fs.statSync(name).size>2*1024*1024) continue;
+              const name=path.join(dir,file); if (fs.statSync(name).size>2*1024*1024) { metadataComplete=false; continue; }
               const d=JSON.parse(fs.readFileSync(name,'utf8'));
               const at=Number(d.lastFocusedAt); if (!d.cliSessionId || !Number.isFinite(at)) continue;
+              if (!d.isArchived && at > 0) candidates.push({ id: d.cliSessionId, at });
               const before=focus.get(d.cliSessionId); focus.set(d.cliSessionId,at);
               const task=tasks.find(task=>task.provider==='claude' && task.id===d.cliSessionId);
               if (task && foreground==='claude' && before !== undefined && at>before && at>=task.completedAt) read.push(task);
-            } catch (_) { /* Ignore incomplete metadata. */ }
+            } catch (_) { metadataComplete = false; /* Ignore incomplete metadata. */ }
           }
         }
       }
-    } catch (_) { /* No reliable focus evidence. */ }
+    } catch (_) { metadataComplete = false; /* No reliable focus evidence. */ }
+    if (activation && Date.now() > activation.expires) activation = null;
+    if (activation && foreground === "claude") {
+      // Reopening the selected conversation need not advance lastFocusedAt.
+      // Only an explicit successful notch activation enables this fallback.
+      candidates.sort((a, b) => b.at - a.at);
+      const latest = candidates[0];
+      if (metadataComplete && latest && (!candidates[1] || latest.at > candidates[1].at)) {
+        const task = tasks.find(task => task.provider === "claude" && task.id === latest.id
+          && activation.tasks.some(clicked => clicked.id === task.id && clicked.completedAt === task.completedAt));
+        if (task && !read.includes(task)) read.push(task);
+      }
+      activation = null;
+    }
     return read;
   };
+  readState.didActivate = (provider, tasks) => {
+    if (provider === "claude") activation = {
+      tasks: tasks.filter(task => task.provider === provider).map(task => ({ ...task })),
+      expires: Date.now() + 5000,
+    };
+  };
+  return readState;
 }
 module.exports={createTaskReadState};

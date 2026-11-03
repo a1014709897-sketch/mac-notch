@@ -45,17 +45,10 @@ body {
   border-radius: 5px;
 }
 .logo {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  flex: none;
-}
-.codex .logo {
   width: 22px;
   height: 22px;
-}
-.tool.codex.state-idle {
-  min-width: 26px;
+  object-fit: contain;
+  flex: none;
 }
 .status {
   width: 20px;
@@ -199,18 +192,15 @@ body {
   }
 }
 
-/* Counts fit within the same fixed wing; a batch never widens the notch. */
+/* Keep artwork and text stable; the window reserves space for full counts. */
 .tool.has-progress {
-  gap: 1px;
-}
-.has-progress .logo {
-  width: 20px;
-  height: 20px;
+  gap: 4px;
 }
 .has-progress .status {
-  width: 28px;
+  width: auto;
 }
 .progress {
+  font-size: 15px;
   display: inline-flex;
   align-items: baseline;
   gap: 1px;
@@ -223,12 +213,12 @@ body {
 }
 .progress .divider {
   color: #70828a;
-  font-size: 0.84em;
+  font-size: 1em;
   font-weight: 400;
 }
 .progress .total {
   color: #b4c1cd;
-  font-size: 0.84em;
+  font-size: 1em;
   font-weight: 500;
 }
 .progress.changing {
@@ -265,7 +255,7 @@ body:not(.expanded) .tool:not(.has-progress) {
   gap: 4px;
 }
 body:not(.expanded) .has-progress .status {
-  width: 24px;
+  width: auto;
 }
 .expanded #surface {
   border-radius: 0 0 28px 28px;
@@ -278,37 +268,25 @@ body:not(.expanded) .has-progress .status {
 }
 #dashboard {
   height: calc(100% - var(--bar-height, 32px));
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #3a4540 transparent;
-  padding: 10px 26px 18px;
+  padding: 4px 26px 16px;
+  display: flex;
+  flex-direction: column;
   animation: reveal 0.2s ease-out;
 }
-#dashboard[hidden] {
-  display: none;
-}
+#dashboard[hidden] { display: none; }
 @keyframes reveal {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
 }
-.dashboard-heading,
-.dashboard-heading > div,
-.quota-heading {
+.dashboard-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-}
-.dashboard-heading {
-  font-size: 13px;
+  flex: none;
+  height: 34px;
+  margin-bottom: 14px;
   color: #b3c1b9;
-  margin-bottom: 18px;
+  font-size: 12px;
 }
 #dashboard button {
   font: inherit;
@@ -324,41 +302,33 @@ body:not(.expanded) .has-progress .status {
   background: #26312b;
   color: #fff;
 }
-#collapse {
-  font-size: 20px !important;
-  line-height: 15px;
-}
+#collapse { font-size: 20px !important; line-height: 15px; }
 .usage-summary {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-  margin-bottom: 22px;
-  min-height: 155px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 30px;
+  flex: none;
+  min-height: 126px;
+  margin-bottom: 18px;
 }
-.today > span {
-  color: #98a79f;
-  font-size: 12px;
-}
+.today > span { color: #98a79f; font-size: 12px; }
 .today strong {
   display: block;
-  font-size: 38px;
-  letter-spacing: -1.3px;
-  font-weight: 650;
-  line-height: 1.25;
-  margin: 9px 0 5px;
+  font-size: 34px;
+  letter-spacing: -1px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 8px 0 6px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-#cost {
-  font-size: 12px;
-  color: #afbeb5;
-  font-variant-numeric: tabular-nums;
-}
+.today strong.large-total { font-size: 26px; }
+#cost { font-size: 12px; color: #afbeb5; font-variant-numeric: tabular-nums; }
 #breakdown {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 13px;
+  margin-top: 12px;
   font-size: 11px;
   color: #a5b7ac;
 }
@@ -371,22 +341,9 @@ body:not(.expanded) .has-progress .status {
   background: #cb795c;
   margin: 0 5px 2px 0;
 }
-#breakdown .codex:before {
-  background: #948cf3;
-}
-.trend-heading {
-  display: flex;
-  justify-content: space-between;
-  color: #9aaba0;
-  font-size: 11px;
-  margin-bottom: 10px;
-}
-#chart {
-  display: flex;
-  align-items: stretch;
-  gap: 7px;
-  height: 124px;
-}
+#breakdown .codex:before { background: #948cf3; }
+.trend-heading { color: #9aaba0; font-size: 11px; line-height: 18px; margin-bottom: 8px; }
+#chart { display: flex; align-items: stretch; gap: 7px; height: 100px; }
 #chart button {
   flex: 1;
   min-width: 0;
@@ -394,129 +351,157 @@ body:not(.expanded) .has-progress .status {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-end;
-  padding: 0 2px 4px;
+  padding: 0 2px;
   font-size: 10px;
+  line-height: 14px;
   color: #899b90;
 }
 #chart .column {
   display: flex;
+  flex: none;
+  width: 100%;
+  max-width: 20px;
+  align-self: center;
   flex-direction: column;
   justify-content: flex-end;
   min-height: 3px;
   background: #313b35;
-  border-radius: 5px;
+  border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 9px;
+  margin-bottom: 8px;
 }
-.column .claude {
-  background: #cf7d60;
-}
-.column .codex {
-  background: #9890ef;
-}
-#chart button.selected {
-  color: #eef8f0;
-  background: #202a24;
-}
+.column .claude { background: #cf7d60; }
+.column .codex { background: #9890ef; }
+#chart button.selected { color: #eef8f0; background: #202a24; }
+#chart button > span:last-child { width: max-content; align-self: center; }
+#chart button:first-child > span:last-child { align-self: flex-start; }
+#chart button:last-child > span:last-child { align-self: flex-end; }
 .quota-heading {
-  font-size: 12px;
-  color: #c1cec6;
-  margin-bottom: 10px;
+  flex: none;
+  font-size: 11px;
+  line-height: 18px;
+  color: #98a79f;
+  margin-bottom: 2px;
 }
-#updated {
-  font-size: 10px;
-  color: #788d80;
-}
-#quotas {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-#quotas.single {
-  grid-template-columns: 1fr;
-}
+#quotas { flex: none; }
 #quotas article {
-  padding: 14px;
-  background: #ffffff09;
-  border-radius: 16px;
-  min-width: 0;
+  display: grid;
+  grid-template-columns: 98px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 20px;
+  min-height: 68px;
+  padding: 10px 0;
 }
+#quotas article + article { border-top: 1px solid #ffffff0b; }
 #quotas h2 {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  margin: 0 0 12px;
+  margin: 0;
   font-weight: 600;
 }
-#quotas img {
-  width: 21px;
-  height: 21px;
+#quotas img { width: 21px; height: 21px; }
+.quota-windows {
+  display: grid;
+  grid-template-columns: repeat(var(--quota-columns, 2), minmax(0, 1fr));
+  gap: 22px;
+  min-width: 0;
 }
+.quota-window { min-width: 0; }
 .quota-row {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 18px;
   color: #a9baaf;
-  margin: 9px 0 5px;
+  margin-bottom: 6px;
 }
-.quota-row b {
-  font-variant-numeric: tabular-nums;
-  color: #e1eee5;
-  font-weight: 600;
-}
-.quota-track {
-  height: 4px;
-  border-radius: 4px;
-  background: #39443c;
-  overflow: hidden;
-}
-.quota-fill {
-  height: 100%;
-  background: #93bda5;
-  border-radius: 4px;
-}
-.reset {
-  display: block;
-  font-size: 9px;
-  color: #819789;
-  margin-top: 4px;
-}
-.quota-error {
-  color: #d9ba8e;
-  font-size: 11px;
-  line-height: 1.6;
-  margin: 8px 0 0;
-}
-#usage-note {
-  font-size: 10px;
-  color: #7e9485;
-  line-height: 1.6;
-  margin: 13px 0 0;
-}
-#notice {
-  font-size: 11px;
-  color: #d8bc91;
-  margin: 6px 0 0;
-}
+.quota-row b { font-variant-numeric: tabular-nums; color: #e1eee5; font-weight: 600; }
+.quota-track { height: 3px; border-radius: 3px; background: #303b34; overflow: hidden; }
+.quota-fill { height: 100%; background: #93bda5; border-radius: 3px; }
+.reset { display: block; font-size: 10px; line-height: 14px; color: #819789; margin-top: 5px; }
+.quota-error, .quota-empty { grid-column: 1 / -1; font-size: 12px; line-height: 19px; margin: 0; overflow-wrap: anywhere; }
+.quota-error { color: #d9ba8e; }
+.quota-empty { color: #819789; }
+.quota-stale { display: block; font-size: 10px; line-height: 14px; color: #d9ba8e; margin: 3px 0 0 29px; cursor: help; }
+.stale .quota-fill { background: #aa9f80; }
+.dashboard-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-top: auto; padding-top: 10px; }
+#updated { font-size: 10px; color: #7e9485; line-height: 16px; margin: 0; }
+#updated { flex: none; margin-left: auto; }
+#notice { font-size: 11px; color: #d8bc91; line-height: 16px; margin: 4px 0 0; }
+#notice:empty { display: none; }
 @media (max-width: 540px) {
-  .usage-summary {
-    gap: 18px;
-  }
-  .today strong {
-    font-size: 30px;
-  }
-  #dashboard {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-  #quotas {
-    grid-template-columns: 1fr;
-  }
+  #dashboard { padding-left: 18px; padding-right: 18px; }
+  .usage-summary { gap: 18px; }
+  .today strong { font-size: 28px; }
+  .today strong.large-total { font-size: 21px; }
+  #quotas article { grid-template-columns: 82px minmax(0, 1fr); column-gap: 12px; }
+  .quota-windows { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   #dashboard {
     animation: none;
   }
 }
+
+.idle-quota { font-size: 13px; font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; color: #e1eee5; }
+
+/* Notification grows from the same black surface; the camera row stays reserved. */
+.notifying #surface { position: relative; border-radius: 0 0 16px 16px; }
+body.notifying #notch { border-radius: 0; padding: 0 16px; }
+#notification[hidden] { display: none; }
+#notification { position: relative; height: 82px; animation: reveal 160ms ease-out; }
+#notification-body {
+  display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  width: 100%; height: 100%; padding: 8px 16px 11px;
+  border: 0; background: transparent; color: inherit; text-align: left;
+  font: inherit; cursor: pointer;
+}
+#notification-body:hover { background: #ffffff06; }
+#notification-source { font-size: 12px; line-height: 17px; color: #aeb2b0; padding-right: 30px; }
+#notification-title { font-size: 15px; line-height: 21px; font-weight: 600; padding-right: 24px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#notification-description { color: #b9bdbb; font-size: 13px; line-height: 19px;
+  overflow: hidden; display: block; white-space: nowrap; text-overflow: ellipsis; }
+#notification-close {
+  position: absolute; top: 5px; right: 14px; width: 28px; height: 28px;
+  border: 0; border-radius: 50%; background: transparent; color: #c3c7c5;
+  font: 20px/28px system-ui; padding: 0; cursor: pointer;
+}
+#notification-close:hover { background: #ffffff28; color: white; }
+#notification-body:focus-visible { outline: 1px solid #8bddb3; outline-offset: -4px; border-radius: 12px; }
+#notification-close:focus-visible { outline: 1px solid #8bddb3; }
+#notification-track { position: absolute; height: 2px; bottom: 0; left: 0; right: 0;
+  background: #20392c; pointer-events: none; }
+#notification-countdown { height: 100%; width: 100%; background: #8bddb3; transform-origin: left; }
+
+/* Compact notch only: pronounced concave shoulders and a continuous lower curve. */
+body:not(.expanded):not(.notifying) #surface {
+  border-radius: 0;
+  clip-path: var(--collapsed-contour);
+}
+body:not(.expanded):not(.notifying) #notch {
+  border-radius: 0;
+  padding: 0 24px;
+}
+
+/* Optical balance: the round Codex mark is denser than Claude's wide silhouette.
+   Keep the layout box stable; inset only the artwork, including during rotation. */
+#notch .codex .logo { padding: 3px; }
+
+#usage-periods { display: flex; gap: 3px; padding: 3px; border-radius: 10px; background: #ffffff0b; }
+#usage-periods button { min-width: 38px; padding: 5px 12px; }
+#usage-periods button[aria-pressed="true"] { background: #d5e7dc; color: #18221c; }
+#chart.dense { gap: 3px; }
+#chart.dense button { padding-left: 0; padding-right: 0; }
+
+/* Quota reuses the compact wings instead of widening the hardware notch. */
+body.idle-quota-enabled:not(.expanded):not(.notifying) #notch { padding: 0 20px; }
+body:not(.expanded):not(.notifying) .tool:has(.idle-quota) { gap: 3px; padding: 0; }
+.idle-quota { position: relative; }
+.idle-quota.stale::after { content: ""; position: absolute; width: 3px; height: 3px; border-radius: 50%; background: #d8bd92; right: 0; top: -3px; }
+
+/* The notification conveys completion; restore the header check when it closes. */
+body.notifying #notch .check { visibility: hidden; }

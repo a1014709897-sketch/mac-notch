@@ -38,4 +38,16 @@ function createTaskAttention() {
     return dismiss;
   };
 }
-module.exports = { frontmostTool, createTaskAttention };
+// The notch badge is an app-level reminder, not the client's read receipt.
+// A sustained visit dismisses only completed reminders for that app. New work
+// and assistance requests are never acknowledged by foreground focus.
+function createVisitAttention(dwellMs = 1000) {
+  let previous = null, enteredAt = 0;
+  return (completed, foreground, now = Date.now()) => {
+    if (foreground !== previous) { previous = foreground; enteredAt = now; }
+    if (!['claude', 'codex'].includes(foreground)) return [];
+    return completed.filter(task => task.provider === foreground &&
+      Number.isFinite(task.completedAt) && now - Math.max(enteredAt, task.completedAt) >= dwellMs);
+  };
+}
+module.exports = { frontmostTool, createTaskAttention, createVisitAttention };

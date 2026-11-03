@@ -18,6 +18,8 @@ const home = os.homedir();
 const claudeRoot = process.env.CLAUDE_CONFIG_DIR || path.join(home, ".claude");
 const codexRoot = process.env.CODEX_HOME || path.join(home, ".codex");
 const complete = createDesktopCompletionReader();
+const { codexNotification } = require("./notifications");
+const codexTitles = new Map();
 let candidates = [],
   discovered = 0;
 const waitingFiles = new Set();
@@ -38,12 +40,17 @@ function codexFiles(now) {
     try {
       const { DatabaseSync } = require("node:sqlite");
       db = new DatabaseSync(path.join(codexRoot, name), { readOnly: true });
+      const hasName = db.prepare("PRAGMA table_info(threads)").all().some(c => c.name === "name");
       for (const row of db
         .prepare(
-          "SELECT rollout_path FROM threads WHERE archived = 0 ORDER BY updated_at DESC LIMIT 128",
+          `SELECT id, ${hasName ? "COALESCE(NULLIF(name, ''), title)" : "title"} AS title, rollout_path FROM threads WHERE archived = 0 ORDER BY updated_at DESC LIMIT 128`,
         )
         .all())
-        if (row.rollout_path) files.add(row.rollout_path);
+        if (row.rollout_path) {
+          files.add(row.rollout_path);
+          codexTitles.set(row.id, row.title);
+        }
+      while (codexTitles.size > 512) codexTitles.delete(codexTitles.keys().next().value);
     } catch {
       /* Older client schema falls back to recent folders. */
     } finally {
@@ -95,9 +102,11 @@ async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
       if (s.waitingForInput) waitingFiles.add(file);
       else waitingFiles.delete(file);
       if (typeof s.turnEnded !== "boolean" && !s.waitingForInput) continue;
+      const id = nativeIdForFile(file) || path.basename(file);
       rows.push({
         provider: "codex",
-        id: nativeIdForFile(file) || path.basename(file),
+        id,
+        notification: codexNotification(id, codexTitles.get(id), s.completionDescription),
         state: s.turnAborted
           ? "idle"
           : s.waitingForInput
@@ -166,7 +175,7 @@ async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
     if (
       !rows.some((row) => row.provider === "claude" && row.id === r.sessionId)
     )
-      rows.push({ provider: "claude", id: r.sessionId, state: "ended" });
+      rows.push({ provider: "claude", id: r.sessionId, state: "ended", notification: r.notification });
   }
   return rows;
 }

@@ -3,16 +3,30 @@ const root = document.querySelector("#notch");
 let last = "",
   clickTimer;
 const progressValues = new Map();
+// Apply the silhouette only to the compact header, never to expanded panels.
+function updateContour() {
+  const w = window.innerWidth;
+  const h = root.getBoundingClientRect().height;
+  const shoulder = 18;
+  const middle = h / 2;
+  const d = `M 0 0 H ${w} C ${w-shoulder} 0 ${w-shoulder} ${middle/2} ${w-shoulder} ${middle} C ${w-shoulder} ${h} ${w-shoulder*1.5} ${h} ${w-shoulder*2} ${h} H ${shoulder*2} C ${shoulder*1.5} ${h} ${shoulder} ${h} ${shoulder} ${middle} C ${shoulder} ${middle/2} ${shoulder} 0 0 0 Z`;
+  document.querySelector("#surface").style.setProperty("--collapsed-contour", `path("${d}")`);
+}
+window.addEventListener("resize", updateContour);
 function render(data) {
+  renderNotification(data.notification);
   document.body.classList.toggle("expanded", data.expanded);
   document.documentElement.style.setProperty(
     "--bar-height",
     `${data.geometry?.height || 32}px`,
   );
+  updateContour();
   document.querySelector("#dashboard").hidden = !data.expanded;
   const active = data.tasks.filter((t) => t.state !== "idle");
   const tasks = active.length ? active : data.tasks;
-  const key = JSON.stringify(tasks);
+  const showQuota = data.settings?.idleQuota === true;
+  document.body.classList.toggle("idle-quota-enabled", showQuota);
+  const key = JSON.stringify([tasks, showQuota, data.remainingQuota, data.quotas]);
   if (key === last) return;
   last = key;
   root.replaceChildren();
@@ -39,7 +53,6 @@ function render(data) {
       )
         progress.classList.add("changing");
       progressValues.set(task.provider, value);
-      progress.style.fontSize = `${Math.max(6, 11 - Math.max(0, value.length - 3) * 1.2)}px`;
       for (const [cls, content] of [
         ["done", task.progress.done],
         ["divider", "/"],
@@ -68,7 +81,17 @@ function render(data) {
       check.className = "check";
       status.append(check);
     }
-    button.append(logo, status);
+    if (task.state === "idle" && showQuota) {
+      const quota = document.createElement("span");
+      quota.className = "idle-quota";
+      const value = data.remainingQuota?.[task.provider];
+      const q = data.quotas?.[task.provider];
+      quota.textContent = Number.isFinite(value) ? `${value}%` : "—";
+      quota.classList.toggle("stale", Boolean(q?.stale));
+      button.title += ` · 剩余额度（最紧张窗口）：${quota.textContent}${q?.stale ? "（缓存）" : ""}${q?.error ? " · " + q.error : ""}`;
+      button.setAttribute("aria-label", button.title);
+      button.append(logo, quota);
+    } else button.append(logo, status);
     button.addEventListener("click", (event) => {
       clearTimeout(clickTimer);
       if (event.detail > 1) {

@@ -62,12 +62,15 @@ function applyLine(state, line, position, contextStart) {
   if (payload.type === 'task_complete' || payload.type === 'turn_aborted') {
     state.turnEnded = true;
     state.turnAborted = payload.type === 'turn_aborted';
+    state.completionDescription = !state.turnAborted && typeof payload.last_agent_message === 'string'
+      ? payload.last_agent_message.slice(0, 16384) : '';
     state.pendingInputCalls.clear();
   } else if (payload.type === 'task_started') {
     state.taskIdentity = payload.turn_id || entry.timestamp || String(position);
     state.reasoningEffort = null;
     state.turnEnded = false;
     state.turnAborted = false;
+    state.completionDescription = '';
     state.pendingInputCalls.clear();
   }
   // Track protocol identity only. Error results retire a request just like an

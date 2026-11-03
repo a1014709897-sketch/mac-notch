@@ -27,13 +27,13 @@ h1 {
 }
 .intro {
   color: #98a49f;
-  margin: 0 0 20px;
+  margin: 0 0 14px;
 }
 .provider {
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 15px;
+  padding: 12px;
   margin: 10px 0;
   background: #202527;
   border-radius: 14px;
@@ -120,21 +120,6 @@ button {
   border: 0;
   cursor: pointer;
 }
-#save {
-  width: 100%;
-  padding: 10px;
-  border-radius: 11px;
-  background: #d8e8db;
-  color: #1b2820;
-  font-weight: 600;
-}
-#save:hover {
-  background: #e5f1e7;
-}
-#save:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
 footer {
   display: flex;
   justify-content: space-between;
@@ -148,3 +133,8 @@ footer button {
   font-size: 10px;
   padding: 0;
 }
+
+.display-settings { border: 0; padding: 0; margin: 14px 0 10px; }
+.display-settings legend { font-weight: 600; margin-bottom: 8px; }
+.display-settings label { display: flex; align-items: center; gap: 7px; margin: 9px 0; cursor: pointer; }
+.display-settings small { display: block; color: #97a29c; font-size: 11px; margin-left: 23px; }

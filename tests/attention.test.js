@@ -1,0 +1,43 @@
+"use strict";
+const test = require("node:test"), assert = require("node:assert/strict");
+const { createVisitAttention } = require("../src/vendor/token-monitor/src/electron/notch/taskAttention");
+const { TaskState } = require("../src/main/state");
+const { NotificationQueue } = require("../src/main/notifications");
+test("returning to either app dismisses only its completed reminders after a sustained visit", () => {
+  const visit = createVisitAttention();
+  const tasks = [{ provider: "claude", id: "a", completedAt: 1000 }, { provider: "codex", id: "b", completedAt: 1000 }];
+  assert.deepEqual(visit(tasks, null, 1500), []);
+  assert.deepEqual(visit(tasks, "claude", 2000), []);
+  assert.deepEqual(visit(tasks, "claude", 2999), []);
+  assert.deepEqual(visit(tasks, "claude", 3000), [tasks[0]]);
+  assert.deepEqual(visit(tasks, "codex", 4000), []);
+  assert.deepEqual(visit(tasks, "codex", 5000), [tasks[1]]);
+});
+test("brief app switches do not consume reminders; completing while foreground also clears", () => {
+  const visit = createVisitAttention();
+  const task = { provider: "codex", id: "one", completedAt: 2000 };
+  visit([], "codex", 1000);
+  assert.deepEqual(visit([task], "codex", 2500), []);
+  assert.deepEqual(visit([task], "codex", 3000), [task]);
+  visit([task], null, 4000); visit([task], "codex", 4500); visit([task], null, 4900);
+  assert.deepEqual(visit([task], "codex", 5000), []);
+  assert.deepEqual(visit([task], "codex", 6000), [task]);
+});
+test("visit clears badge and queued notification, keeps running and waiting, and permits a new completion", () => {
+  const state = new TaskState(), queue = new NotificationQueue(), visit = createVisitAttention();
+  state.update(["done", "working", "question"].map(id => ({ provider: "codex", id, state: "running" })), 1000);
+  state.update([{ provider: "codex", id: "done", state: "ended" }, { provider: "codex", id: "question", state: "waiting" }], 2000);
+  queue.observe([...state.sessions.values()], 2000); queue.tick(2000);
+  visit(state.completed(), "codex", 2000);
+  for (const task of visit(state.completed(), "codex", 3000)) state.acknowledge(task.provider, task.id);
+  queue.observe([...state.sessions.values()], 3000);
+  assert.equal(queue.current, null); assert.equal(state.completed().length, 0);
+  assert.equal(state.sessions.get("codex:working").state, "running");
+  assert.equal(state.sessions.get("codex:question").state, "waiting");
+  state.update([{ provider: "codex", id: "done", state: "ended" }], 4000);
+  assert.equal(state.completed().length, 0);
+  state.update([{ provider: "codex", id: "done", state: "running" }], 5000);
+  state.update([{ provider: "codex", id: "done", state: "ended" }], 6000);
+  queue.observe([...state.sessions.values()], 6000);
+  assert.equal(queue.tick(6000).provider, "codex");
+});

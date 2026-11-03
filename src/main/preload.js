@@ -6,9 +6,12 @@ contextBridge.exposeInMainWorld("macNotch", {
     ipcRenderer.on("state", (_event, state) => callback(state)),
   onNotice: (callback) =>
     ipcRenderer.on("notice", (_event, text) => callback(text)),
+  notification: (action, key, value) => {
+    if (["open", "dismiss", "hover", "focus"].includes(action))
+      ipcRenderer.send(`notification:${action}`, key, value);
+  },
   open: (provider) => ipcRenderer.send("tool:open", provider),
   panel: () => ipcRenderer.send("panel:toggle"),
-  settings: () => ipcRenderer.send("settings:open"),
   closeSettings: () => ipcRenderer.send("settings:close"),
   collapse: () => ipcRenderer.send("panel:close"),
   refresh: () => ipcRenderer.send("quota:refresh"),

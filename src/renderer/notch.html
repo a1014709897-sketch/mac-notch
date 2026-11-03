@@ -12,14 +12,23 @@
   <body>
     <div id="surface">
       <header id="notch" aria-label="AI 任务状态"></header>
+      <section id="notification" hidden aria-label="Claude 通知">
+        <button id="notification-body" aria-describedby="notification-description">
+          <span id="notification-source">Claude</span>
+          <strong id="notification-title"></strong>
+          <span id="notification-description"></span>
+        </button>
+        <button id="notification-close" aria-label="关闭通知">×</button>
+        <div id="notification-track" aria-hidden="true"><div id="notification-countdown"></div></div>
+      </section>
       <main id="dashboard" hidden>
         <div class="dashboard-heading">
-          <span>用量与额度</span>
-          <div>
-            <button id="refresh" title="刷新本机用量与订阅额度">刷新</button
-            ><button id="settings" title="开启或关闭工具">设置</button
-            ><button id="collapse" aria-label="收起面板">⌃</button>
+          <div id="usage-periods" role="group" aria-label="统计周期">
+            <button data-period="day" aria-pressed="true">日</button>
+            <button data-period="week" aria-pressed="false">周</button>
+            <button data-period="month" aria-pressed="false">月</button>
           </div>
+          <button id="collapse" aria-label="收起面板">⌃</button>
         </div>
         <section class="usage-summary" aria-label="本机 Token 用量">
           <div class="today">
@@ -29,19 +38,20 @@
           </div>
           <div class="trend">
             <div class="trend-heading">
-              <span>近 7 天</span><span id="week-tokens"></span>
+              <span id="trend-label">今日 · 按小时</span>
             </div>
             <div id="chart" aria-label="每日 Token 用量"></div>
           </div>
         </section>
-        <div class="quota-heading">订阅剩余额度<span id="updated"></span></div>
+        <div class="quota-heading">订阅剩余额度</div>
         <section id="quotas" aria-label="订阅剩余额度"></section>
-        <p id="usage-note">
-          仅统计本机记录 · 费用为标准 API 价格估算，不是订阅账单
-        </p>
+        <footer class="dashboard-footer">
+          <span id="updated"></span>
+        </footer>
         <p id="notice" role="status"></p>
       </main>
     </div>
+    <script src="notification.js"></script>
     <script src="notch.js"></script>
     <script src="dashboard.js"></script>
   </body>

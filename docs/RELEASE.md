@@ -20,7 +20,9 @@ npm run checksums
 
 ## 发布身份
 
+<!--
 产品名 Mac Notch，仓库 `a1014709897-sketch/mac-notch`，bundle ID `io.github.a1014709897-sketch.macnotch`。首发后保持此身份，避免用户的安全存储/登录启动身份变化。没有绑定 Token Monitor 的更新源。
+-->
 
 当前固定使用 `build.mac.identity="-"` 生成 ad-hoc 签名产物，关闭 hardened runtime 和自动公证；本地 `codesign --verify --deep --strict` 已通过。这种签名没有 Apple Developer ID 身份，也没有公证。Gatekeeper 对从互联网下载的未公证应用可能阻止启动。这不是面向普通用户的最终分发签名状态，不应宣传“已公证”。不提供关闭系统安全检查的安装步骤。
 
@@ -35,6 +37,12 @@ npm run release:local
 # 检查安装包、确认工作区干净，再推送提交和版本标签。
 ```
 
-首发说明使用 `docs/releases/v0.1.0.md`，附件包括 DMG、应用 ZIP、源码 ZIP 和 SHA256SUMS.txt。发布后核对远端标签对应的提交和附件摘要。
+v0.2.1 体验版说明使用 `docs/releases/v0.2.1.md`，附件包括 DMG、应用 ZIP、源码 ZIP 和 SHA256SUMS.txt。发布后核对远端标签对应的提交和附件摘要。
 
 发布检查：许可证和第三方说明完整；README 不包含本机路径；截图使用演示数据；明确人工验收与平台范围；签名与公证状态准确；Release 附 SHA256 校验文件。
+
+## v0.2.1 体验版流程
+
+本地构建 arm64 安装包并通过打包版 smoke 后，将应用 ZIP 的 SHA-256 固定写入 `site/install.sh`，再生成源码 ZIP 和校验清单。源码包需包含最终版本的安装脚本和文档。提交全部变更，版本标签与提交绑定，远端 CI 通过后发布 GitHub prerelease，并部署官网。官网和 README 明确链接 `releases/tag/v0.2.1`，避免 `latest` 跳到旧稳定版。
+
+发布后检查附件摘要，运行公开安装脚本的 `--verify-only`，确认下载的版本、应用身份、签名完整性及 SHA-256 一致。此检查不等于 Gatekeeper 认可，也不替代另一台 Mac 的安装验收。

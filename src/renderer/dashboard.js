@@ -8,7 +8,7 @@
       notation: "compact",
       maximumFractionDigits: 1,
     }).format(n);
-  let latest, selected;
+  let latest, selected, period = "day";
   function el(tag, text, cls) {
     const e = document.createElement(tag);
     if (text !== undefined) e.textContent = text;
@@ -21,77 +21,59 @@
       enabled = Object.keys(data.settings.providers).filter(
         (p) => data.settings.providers[p],
       );
-    const day = u.days.find((d) => d.date === selected) || u.today;
-    $("day-label").textContent =
-      day.date === u.today.date
-        ? "今日 Token"
-        : `${day.date.slice(5).replace("-", "月")}日 Token`;
+    const view = u.periods?.[period] || {bins:u.days, total:u.today};
+    const bins = view.bins;
+    // A retained date can disappear when the calendar week or month rolls over.
+    const selectedBin = bins.find(d => d.date === selected);
+    if (!selectedBin) selected = undefined;
+    const day = selectedBin || view.total;
+    const labels = {day:"今日",week:"本周",month:"本月"};
+    $("day-label").textContent = (selected ? selected : labels[period]) + " Token";
     $("tokens").textContent = u.loading ? "—" : number(day.tokens);
-    $("tokens").style.fontSize = day.tokens >= 1e9 ? "32px" : "";
-    $("cost").textContent = u.loading
-      ? "正在读取本机用量…"
-      : day.unpricedTokens === day.tokens && day.tokens > 0
-        ? "暂无对应模型的价格"
-        : `API 费用估算 ${money(day.cost)}${day.unpricedTokens ? " 起" : ""}`;
-    $("breakdown").replaceChildren(
-      ...enabled.map((p) =>
-        el(
-          "span",
-          `${p === "claude" ? "Claude" : "Codex"} ${compact(day[p])}`,
-          p,
-        ),
-      ),
-    );
-    $("week-tokens").textContent =
-      `${compact(u.days.reduce((n, d) => n + d.tokens, 0))} Token`;
-    const max = Math.max(1, ...u.days.map((d) => d.tokens));
-    $("chart").replaceChildren(
-      ...u.days.map((d) => {
-        const b = el(
-          "button",
-          undefined,
-          d.date === day.date ? "selected" : "",
-        );
-        b.title = `${d.date} · ${number(d.tokens)} Token`;
-        b.setAttribute("aria-label", b.title);
-        b.setAttribute("aria-pressed", String(d.date === day.date));
-        const column = el("span", undefined, "column");
-        column.style.height = `${Math.max(3, (d.tokens / max) * 94)}px`;
-        for (const p of enabled) {
-          const segment = el("span", undefined, p);
-          segment.style.height = `${d.tokens ? (d[p] / d.tokens) * 100 : 0}%`;
-          column.append(segment);
-        }
-        b.append(
-          column,
-          el(
-            "span",
-            d.date === u.today.date ? "今天" : String(Number(d.date.slice(-2))),
-          ),
-        );
-        b.onclick = () => {
-          selected = d.date;
-          render(latest);
-        };
-        return b;
-      }),
-    );
+    $("tokens").classList.toggle("large-total", day.tokens >= 1e9);
+    $("cost").textContent = u.loading ? "正在读取本机用量…" :
+      day.unpricedTokens === day.tokens && day.tokens > 0 ? "暂无对应模型的价格" :
+      `API 费用估算 ${money(day.cost)}${day.unpricedTokens ? " 起" : ""}`;
+    $("breakdown").replaceChildren(...enabled.map(p => el("span", `${p === "claude" ? "Claude" : "Codex"} ${compact(day[p])}`,p)));
+    $("trend-label").textContent = period === "day" ? "今日 · 按小时" :
+      `${period === "week" ? "本周 · 周一至今" : "本月 · 1日至今"}`;
+    for (const button of document.querySelectorAll("[data-period]")) button.setAttribute("aria-pressed",String(button.dataset.period === period));
+    $("chart").classList.toggle("dense", bins.length > 12);
+    $("chart").setAttribute("aria-label",labels[period] + " Token 用量");
+    const max = Math.max(1,...bins.map(d=>d.tokens));
+    $("chart").replaceChildren(...bins.map((d,i)=>{
+      const b=el("button",undefined,d.date===selected ? "selected" : "");
+      b.title=`${d.date} · ${number(d.tokens)} Token`;
+      b.setAttribute("aria-label",b.title); b.setAttribute("aria-pressed",String(d.date===selected));
+      const column=el("span",undefined,"column");
+      column.style.height=`${Math.max(3,d.tokens/max*78)}px`;
+      for(const p of enabled){const segment=el("span",undefined,p);segment.style.height=`${d.tokens ? d[p]/d.tokens*100 : 0}%`;column.append(segment);}
+      const label=period === "day" ? String(i) : String(Number(d.date.slice(-2)));
+      b.append(column,el("span",bins.length<=12 || i% (period === "day" ? 6 : 5)===0 || i===bins.length-1 ? label : "\u00a0"));
+      b.onclick=()=>{selected=selected===d.date ? undefined : d.date;render(latest);};
+      return b;
+    }));
     $("quotas").classList.toggle("single", enabled.length === 1);
     $("quotas").replaceChildren(
       ...enabled.map((p) => {
         const q = data.quotas[p],
           article = el("article"),
+          identity = el("div", undefined, "quota-identity"),
           title = el("h2", p === "claude" ? "Claude" : "Codex"),
-          image = el("img");
+          image = el("img"),
+          windows = el("div", undefined, "quota-windows");
         image.src = `../../assets/${p}.svg`;
         image.alt = "";
         title.prepend(image);
-        article.append(title);
+        windows.style.setProperty("--quota-columns", Math.max(2, q.windows.length));
+        identity.append(title);
+        article.append(identity, windows);
         for (const w of q.windows) {
-          const row = el("div", undefined, "quota-row");
+          const cell = el("div", undefined, "quota-window"),
+            row = el("div", undefined, "quota-row");
           row.append(
             el("span", w.label),
-            el("b", `${Math.round(w.remaining)}% 剩余`),
+            el("b", `${Math.round(w.remaining)}%`),
           );
           const track = el("div", undefined, "quota-track"),
             fill = el("div", undefined, "quota-fill");
@@ -102,37 +84,39 @@
           track.setAttribute("aria-valuenow", String(w.remaining));
           track.setAttribute("aria-valuemin", "0");
           track.setAttribute("aria-valuemax", "100");
-          article.append(row, track);
+          cell.append(row, track);
           if (w.resetAt)
-            article.append(
+            cell.append(
               el(
                 "small",
                 `${new Date(w.resetAt).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 重置`,
                 "reset",
               ),
             );
+          windows.append(cell);
         }
-        if (q.error)
-          article.append(
-            el("p", `${q.stale ? "上次额度 · " : ""}${q.error}`, "quota-error"),
-          );
+        if (q.error) {
+          if (q.windows.length) {
+            const warning = el("span", "暂未更新", "quota-stale");
+            warning.title = `当前显示上次额度。${q.error}`;
+            warning.tabIndex = 0;
+            warning.setAttribute("aria-label", warning.title);
+            identity.append(warning);
+            article.classList.add("stale");
+          } else windows.append(el("p", q.error, "quota-error"));
+        } else if (!q.windows.length) windows.append(el("p", "正在读取额度…", "quota-empty"));
         return article;
       }),
     );
     $("updated").textContent = u.loading
       ? ""
-      : `本机用量 ${new Date(u.updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}`;
-    $("usage-note").textContent =
-      "仅统计本机记录 · 费用为标准 API 价格估算，不是订阅账单" +
-      (u.days.some((d) => d.unpricedTokens) ? " · 部分模型未计价" : "");
+      : `${new Date(u.updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })} 更新`;
     $("notice").textContent =
-      u.error || (u.incomplete ? "部分记录暂时无法读取，下次刷新将重试" : "");
+      u.error || (u.incomplete ? "部分记录暂时无法读取，稍后自动重试" : "");
   }
-  $("refresh").onclick = () => {
-    macNotch.refresh();
-    $("notice").textContent = "正在刷新…";
+  for (const button of document.querySelectorAll("[data-period]")) button.onclick = () => {
+    period = button.dataset.period; selected = undefined; render(latest);
   };
-  $("settings").onclick = () => macNotch.settings();
   $("collapse").onclick = () => macNotch.collapse();
   macNotch.onState(render);
   macNotch.get().then(render);

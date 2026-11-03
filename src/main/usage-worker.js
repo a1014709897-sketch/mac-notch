@@ -84,7 +84,7 @@ async function scan() {
   try {
     const now = Date.now(),
       cutoff = new Date(now);
-    cutoff.setDate(cutoff.getDate() - 6);
+    cutoff.setDate(cutoff.getDate() - 30);
     cutoff.setHours(0, 0, 0, 0);
     const present = new Set();
     let incomplete = false;

@@ -142,3 +142,19 @@ test("a later Claude fragment in another file supersedes the copied partial usag
   consume(b, row(50), "claude");
   assert.equal(summarize([a, b], ["claude"], now).today.tokens, 150);
 });
+
+test('calendar periods include a cross-month Monday week, hourly day and no future usage', () => {
+  const s=parserState(); const now=new Date(2026,4,1,12).getTime();
+  for(const [date,id] of [[new Date(2026,3,26,12),'previous-week'],[new Date(2026,3,27,12),'monday'],[new Date(2026,3,30,12),'previous-month'],[new Date(2026,4,1,10),'today'],[new Date(2026,4,1,13),'future']]) {
+    consume(s,{timestamp:date.toISOString(),type:'assistant',message:{id,usage:{input_tokens:10}}},'claude');
+  }
+  const u=summarize([s],['claude'],now);
+  assert.equal(u.periods.day.bins.length,24);
+  assert.equal(u.periods.day.total.tokens,10);
+  assert.equal(u.periods.day.bins[10].tokens,10);
+  assert.equal(u.periods.week.total.tokens,30);
+  assert.equal(u.periods.week.bins[0].date,'2026-04-27');
+  assert.equal(u.periods.month.total.tokens,10);
+  assert.equal(u.periods.month.bins.length,1);
+  assert.equal(summarize([s],['codex'],now).periods.week.total.tokens,0);
+});

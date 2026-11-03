@@ -26,3 +26,31 @@ test('Claude focus must advance for the specific session after completion',t=>{
  write('a',300);assert.deepEqual(read(tasks,'claude'),[tasks[0]]);
  assert.deepEqual(read(tasks,'claude'),[]);
 });
+test('explicit Claude activation clears only the selected completed session without a new focus timestamp',t=>{
+ const home=fs.mkdtempSync(path.join(os.tmpdir(),'task-activate-'));t.after(()=>fs.rmSync(home,{recursive:true,force:true}));
+ const root=path.join(home,'Library/Application Support/Claude/claude-code-sessions/account/org');fs.mkdirSync(root,{recursive:true});
+ const write=(id,at,extra={})=>fs.writeFileSync(path.join(root,`local_${id}.json`),JSON.stringify({cliSessionId:id,lastFocusedAt:at,...extra}));
+ const read=createTaskReadState(home);
+ const tasks=[{provider:'claude',id:'a',completedAt:200},{provider:'claude',id:'b',completedAt:200}];
+ write('a',100);write('b',50);write('archived',500,{isArchived:true});
+ assert.deepEqual(read(tasks,'claude'),[]);
+ read.didActivate('claude',tasks);
+ assert.deepEqual(read(tasks,'codex'),[]); // open callback is not foreground proof
+ assert.deepEqual(read(tasks,'claude'),[tasks[0]]);
+ assert.deepEqual(read(tasks,'claude'),[]); // one-shot, not every foreground poll
+ read.didActivate('claude',tasks);
+ assert.deepEqual(read([{...tasks[0],completedAt:400},tasks[1]],'claude'),[]); // later turn
+ write('other',150);
+ read.didActivate('claude',tasks);
+ assert.deepEqual(read(tasks,'claude'),[]); // selected conversation is not a completed task
+ write('other',100);
+ read.didActivate('claude',tasks);
+ assert.deepEqual(read(tasks,'claude'),[]); // ambiguous focus timestamps
+ fs.unlinkSync(path.join(root,'local_other.json'));
+ fs.writeFileSync(path.join(root,'local_partial.json'),'{');
+ read.didActivate('claude',tasks);
+ assert.deepEqual(read(tasks,'claude'),[]); // cannot rank an incomplete metadata snapshot
+ fs.unlinkSync(path.join(root,'local_partial.json'));
+ read.didActivate('codex',tasks);
+ assert.deepEqual(read(tasks,'claude'),[]);
+});

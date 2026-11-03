@@ -9,6 +9,9 @@ function createStore(directory, safeStorage) {
     claudeCookie: null,
     providers: { claude: true, codex: true },
     setupComplete: false,
+    idleQuota: false,
+    notifications: true,
+    menuBar: { claude: true, codex: true },
   };
   try {
     data = { ...data, ...JSON.parse(fs.readFileSync(file, "utf8")) };
@@ -17,6 +20,7 @@ function createStore(directory, safeStorage) {
     claude: data.providers?.claude !== false,
     codex: data.providers?.codex !== false,
   };
+  data.menuBar = { claude: data.menuBar?.claude !== false, codex: data.menuBar?.codex !== false };
   function save(next) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     const tmp = file + ".tmp";
@@ -27,6 +31,9 @@ function createStore(directory, safeStorage) {
     public: () => ({
       startAtLogin: data.startAtLogin,
       providers: { ...data.providers },
+      idleQuota: data.idleQuota === true,
+      notifications: data.notifications !== false,
+      menuBar: { ...data.menuBar },
       setupComplete: data.setupComplete === true,
       proxy: data.proxy,
       hasClaudeCookie: Boolean(data.claudeCookie),
@@ -41,7 +48,11 @@ function createStore(directory, safeStorage) {
       }
     },
     update(value) {
-      const next = { ...data, providers: { ...data.providers } };
+      const next = { ...data, providers: { ...data.providers }, menuBar: { ...data.menuBar } };
+      if (typeof value.notifications === "boolean") next.notifications = value.notifications;
+      if (typeof value.idleQuota === "boolean") next.idleQuota = value.idleQuota;
+      for (const provider of ["claude", "codex"])
+        if (typeof value.menuBar?.[provider] === "boolean") next.menuBar[provider] = value.menuBar[provider];
       for (const provider of ["claude", "codex"])
         if (typeof value.providers?.[provider] === "boolean")
           next.providers[provider] = value.providers[provider];

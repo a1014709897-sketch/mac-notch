@@ -6,6 +6,9 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const installer = path.resolve(__dirname, "../site/install.sh");
+const installerText = fs.readFileSync(installer, "utf8");
+const releaseVersion = installerText.match(/local version="([^"]+)"/)[1];
+const releaseChecksum = installerText.match(/local checksum="([a-f0-9]{64})"/)[1];
 
 function harness(t, options = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "mac-notch-installer-test-"));
@@ -18,8 +21,8 @@ function harness(t, options = {}) {
   writeCommand("sysctl", `echo ${options.arm64 ?? "1"}`);
   writeCommand("id", `echo ${options.uid ?? "501"}`);
   writeCommand("curl", `touch "$TEST_ROOT/network-used"\nif [ "${options.networkFailure || false}" = true ]; then exit 22; fi\nwhile [ "$#" -gt 0 ]; do\n if [ "$1" = --output ]; then shift; printf 'release fixture' > "$1"; exit 0; fi\n shift\ndone\nexit 1`);
-  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : "41ffe28d1c021395d03f850dfb61cbe055ee762f62d040a9f3fc27f663918c37"}  fixture.zip'`);
-  writeCommand("ditto", `touch "$TEST_ROOT/extraction-used"\nif [ "$1" = -x ]; then\n mkdir -p "$4/Mac Notch.app/Contents"\n cat > "$4/Mac Notch.app/Contents/Info.plist" <<'PLIST'\n<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${options.badBundle ? "unexpected.app" : "io.github.a1014709897-sketch.macnotch"}</string><key>CFBundleShortVersionString</key><string>0.2.0</string></dict></plist>\nPLIST\nelse\n cp -R "$1" "$2"\nfi`);
+  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : releaseChecksum}  fixture.zip'`);
+  writeCommand("ditto", `touch "$TEST_ROOT/extraction-used"\nif [ "$1" = -x ]; then\n mkdir -p "$4/Mac Notch.app/Contents"\n cat > "$4/Mac Notch.app/Contents/Info.plist" <<'PLIST'\n<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${options.badBundle ? "unexpected.app" : "io.github.a1014709897-sketch.macnotch"}</string><key>CFBundleShortVersionString</key><string>${releaseVersion}</string></dict></plist>\nPLIST\nelse\n cp -R "$1" "$2"\nfi`);
   writeCommand("codesign", `touch "$TEST_ROOT/signature-checked"\nexit ${options.badSignature ? "1" : "0"}`);
   const dest = path.join(home, "Applications/Mac Notch.app");
   if (options.existing) {
@@ -93,4 +96,13 @@ test("verify-only checks the fixture without installing or replacing an app", { 
   assert.match(result.stdout, /no application installed or launched/);
   assert.equal(fs.existsSync(path.join(h.root, "signature-checked")), true);
   assert.equal(fs.existsSync(h.dest), false);
+});
+
+test("website and installer explicitly target this prerelease instead of latest", () => {
+  const version = require("../package.json").version;
+  assert.equal(releaseVersion, version);
+  const html = fs.readFileSync(path.resolve(__dirname, "../site/index.html"), "utf8");
+  assert.ok(html.includes(`releases/tag/v${version}`));
+  assert.ok(html.includes(`v${version} 体验版`));
+  assert.equal(html.includes("releases/latest"), false);
 });

@@ -96,9 +96,9 @@ function rowsFrom(state) {
   ];
 }
 function summarize(states, enabled = ["claude", "codex"], now = Date.now()) {
-  const days = Array.from({ length: 7 }, (_, i) => {
+  const days = Array.from({ length: 31 }, (_, i) => {
     const d = new Date(now);
-    d.setDate(d.getDate() - (6 - i));
+    d.setDate(d.getDate() - (30 - i));
     return {
       date: dayKey(d),
       tokens: 0,
@@ -129,6 +129,23 @@ function summarize(states, enabled = ["claude", "codex"], now = Date.now()) {
     day.cost += row.cost;
     day.unpricedTokens += row.unpricedTokens;
   }
-  return { days, today: days[6], updatedAt: now, loading: false };
+  const today = days[30];
+  const empty = (date) => ({date, tokens:0, cost:0, unpricedTokens:0, claude:0, codex:0});
+  const hours = Array.from({length:24}, (_, hour) => empty(`${String(hour).padStart(2, "0")}:00`));
+  for (const row of unique.values()) {
+    if (dayKey(row.at) !== today.date) continue;
+    const hour = hours[new Date(row.at).getHours()];
+    for (const key of ["tokens", "cost", "unpricedTokens"]) hour[key] += row[key];
+    hour[row.provider] += row.tokens;
+  }
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 6) % 7);
+  const week = days.filter(d => d.date >= dayKey(weekStart));
+  const month = days.filter(d => d.date.slice(0, 7) === today.date.slice(0, 7));
+  const period = (bins) => ({bins, total: bins.reduce((sum, d) => {
+    for (const key of ["tokens", "cost", "unpricedTokens", "claude", "codex"]) sum[key] += d[key];
+    return sum;
+  }, empty(null))});
+  return { days: days.slice(-7), today, periods: {day:period(hours), week:period(week), month:period(month)}, updatedAt: now, loading: false };
 }
 module.exports = { dayKey, buckets, parserState, consume, rowsFrom, summarize };

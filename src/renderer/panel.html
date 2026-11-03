@@ -13,7 +13,7 @@
     <div class="titlebar"></div>
     <main>
       <h1>选择你的 AI 工具</h1>
-      <p class="intro">只开启你使用的工具，随时可以调整。</p>
+      <p class="intro">只开启你使用的工具，修改后立即生效。</p>
       <form id="settings">
         <label class="provider"
           ><img src="../../assets/claude.svg" alt="" /><span
@@ -33,6 +33,16 @@
             role="switch"
             aria-label="开启 Codex" /><i></i
         ></label>
+        <fieldset class="display-settings">
+          <legend>显示方式</legend>
+          <label><input id="notifications" type="checkbox" role="switch" checked /> 任务完成通知</label>
+          <small>默认开启；关闭后保留刘海任务状态，不再展开通知。</small>
+          <label><input id="idle-quota" type="checkbox" role="switch" /> 刘海条空闲时显示剩余额度</label>
+          <small>图标＋剩余百分比；有任务时优先显示任务状态。</small>
+          <label><input id="menu-claude" type="checkbox" role="switch" /> 菜单栏显示 Claude</label>
+          <label><input id="menu-codex" type="checkbox" role="switch" /> 菜单栏显示 Codex</label>
+          <small>隐藏菜单栏板块不影响任务监测；打开 Mac Notch 应用可返回设置。</small>
+        </fieldset>
         <label class="login"
           ><input id="login" type="checkbox" /> 登录时启动</label
         >
@@ -41,7 +51,6 @@
           Claude Code CLI（<code>claude</code>），完成订阅账号登录后刷新。
         </p>
         <p id="notice" role="status"></p>
-        <button type="submit" id="save">开始使用</button>
       </form>
       <footer>
         <span id="version"></span><button id="quit">退出 Mac Notch</button>

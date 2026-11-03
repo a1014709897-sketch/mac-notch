@@ -1,0 +1,53 @@
+"use strict";
+const notificationElement = document.querySelector("#notification");
+const notificationBody = document.querySelector("#notification-body");
+const notificationClose = document.querySelector("#notification-close");
+const countdown = document.querySelector("#notification-countdown");
+let notificationData = null;
+let countdownFrame;
+function paintCountdown() {
+  cancelAnimationFrame(countdownFrame);
+  if (!notificationData) return;
+  const remaining = notificationData.expiresAt === null ? notificationData.remaining : notificationData.expiresAt - Date.now();
+  countdown.style.transform = `scaleX(${Math.min(1, Math.max(0, remaining / 5000))})`;
+  if (notificationData.expiresAt !== null) countdownFrame = requestAnimationFrame(paintCountdown);
+}
+function renderNotification(value) {
+  const changed = notificationData?.key !== value?.key;
+  notificationData = value;
+  document.body.classList.toggle("notifying", Boolean(value));
+  notificationElement.hidden = !value;
+  if (!value) { cancelAnimationFrame(countdownFrame); return; }
+  const source = value.provider === "codex" ? "Codex" : "Claude";
+  document.querySelector("#notification-source").textContent = source;
+  notificationElement.setAttribute("aria-label", `${source} 通知`);
+  document.querySelector("#notification-title").textContent = value.title;
+  document.querySelector("#notification-description").textContent = value.description;
+  notificationBody.setAttribute("aria-label", `${source}，${value.title}，${value.description}，点击打开会话`);
+  if (changed) {
+    // A new card can appear beneath an already stationary pointer.
+    macNotch.notification("hover", value.key, notificationElement.matches(":hover"));
+  }
+  paintCountdown();
+}
+notificationBody.addEventListener("click", () => {
+  if (notificationData) macNotch.notification("open", notificationData.key);
+});
+notificationClose.addEventListener("click", () => {
+  if (notificationData) macNotch.notification("dismiss", notificationData.key);
+});
+for (const [event, value] of [["mouseenter", true], ["mouseleave", false]])
+  notificationElement.addEventListener(event, () => {
+    if (notificationData) macNotch.notification("hover", notificationData.key, value);
+  });
+notificationElement.addEventListener("focusin", () => {
+  if (notificationData) macNotch.notification("focus", notificationData.key, true);
+});
+notificationElement.addEventListener("focusout", event => {
+  if (notificationData && !notificationElement.contains(event.relatedTarget))
+    macNotch.notification("focus", notificationData.key, false);
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && notificationData)
+    macNotch.notification("dismiss", notificationData.key);
+});

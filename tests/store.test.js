@@ -43,3 +43,35 @@ test("provider preferences persist independently and migrate existing settings",
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('display preferences migrate, persist independently, and reject non-booleans', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mac-notch-display-'));
+  t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
+  const store = createStore(dir, {});
+  assert.equal(store.public().idleQuota, false);
+  assert.deepEqual(store.public().menuBar, {claude:true,codex:true});
+  store.update({idleQuota:true, menuBar:{claude:false}});
+  const reopened = createStore(dir, {});
+  assert.equal(reopened.public().idleQuota, true);
+  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:true});
+  assert.deepEqual(reopened.public().providers, {claude:true,codex:true});
+  reopened.update({idleQuota:'false',menuBar:{codex:false}});
+  assert.equal(reopened.public().idleQuota, true);
+  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:false});
+});
+
+test('notifications default on for new and legacy settings and persist an explicit off', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mac-notch-notifications-'));
+  t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
+  assert.equal(createStore(dir, {}).public().notifications, true);
+  fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({startAtLogin:true}));
+  const store = createStore(dir, {});
+  assert.equal(store.public().notifications, true);
+  store.update({notifications:false});
+  const reopened = createStore(dir, {});
+  assert.equal(reopened.public().notifications, false);
+  reopened.update({notifications:'true'});
+  assert.equal(reopened.public().notifications, false);
+  reopened.update({notifications:true});
+  assert.equal(createStore(dir, {}).public().notifications, true);
+});

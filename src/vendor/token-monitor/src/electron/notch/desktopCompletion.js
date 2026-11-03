@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
+const { claudeNotification } = require('../../../../../main/notifications');
 
 // Desktop's registry idle is not proof of success. A completed-turn increment
 // for the same observed user turn is; read metadata only, never conversation text.
@@ -33,7 +34,7 @@ function createDesktopCompletionReader(root = path.join(os.homedir(), 'Library/A
                 && !d.interruptedAwaitingPerson);
               seen.set(d.cliSessionId, { turn, count, complete });
               if (complete) result.push({ client: 'claude', sessionId: d.cliSessionId,
-                turnEnded: true, lastUsedAt: new Date(now).toISOString() });
+                notification: claudeNotification(d), turnEnded: true, lastUsedAt: new Date(now).toISOString() });
             } catch (_) { /* Partial writes do not manufacture completion. */ }
           }
         }
