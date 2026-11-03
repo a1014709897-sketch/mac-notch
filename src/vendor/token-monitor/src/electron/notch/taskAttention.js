@@ -27,7 +27,7 @@ function createTaskAttention() {
   const completedAt = new Map();
   let previous = null;
   return (items, foreground, now) => {
-    const ended = new Set(items.filter(item => item.taskState === 'ended').map(item => item.provider));
+    const ended = new Set(items.filter(item => (item.taskState === 'ended' || item.taskProgress?.done > 0)).map(item => item.provider));
     for (const provider of completedAt.keys()) if (!ended.has(provider)) completedAt.delete(provider);
     const dismiss = [];
     for (const provider of ended) {

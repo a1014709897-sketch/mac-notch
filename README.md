@@ -20,9 +20,14 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 - 空闲时两位小伙伴常驻，Claude 左、Codex 右；没有状态文案、跑马灯或额外一行。
 - 每块屏幕上的收起宽度固定，状态变化不撑宽。真实摄像头区域留空；外接无刘海屏幕使用固定宽度胶囊。
 - 单工具：左侧图标、右侧状态，整条可以点击。双工具：各自点击跳转。单击打开对应官方客户端，双击打开额度与设置。悬停不展开。
-- 已完成提醒在点击或切回客户端后清除；完成时已处于对应客户端，则保留 2 秒。运行和待协助不会因点击而当作完成。
+- 同工具多任务显示已完成/总数（如 `1/3`），数字变化有轻微过渡；协助问号优先，全部完成后显示勾。
+- 完成提醒按具体会话的已读信号清除，查看一个会话只扣除它；仅打开客户端不会清空其他会话。运行和待协助不会因点击而当作完成。
 - 两个彩色菜单栏图标分别显示 Claude / Codex 剩余额度。百分比取已知窗口中最小剩余值；不把本地 token 消耗当成订阅额度。
 - 设置中支持系统代理或本应用专用代理、Claude 网页凭据加密保存、登录启动。
+
+## 下载
+
+[GitHub Releases](https://github.com/wjiejie2/mac-notch/releases) 提供 Apple Silicon DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。首发使用 ad-hoc 签名，尚未 Apple Developer ID 公证。
 
 ## 快速开始
 
@@ -39,7 +44,7 @@ npm start
 无需 Token Monitor，也不会读取其配置。第一次与已安装的 Token Monitor 同时运行会出现两套刘海/菜单栏项目；请在使用时退出其中一套。
 
 ```sh
-npm run smoke          # 六种窗口状态与图标资源检查
+npm run smoke          # 九种窗口状态与图标资源检查
 npm run demo           # 使用模拟额度，可切换空闲/运行/协助/完成；不读取真实登录
 npm run pack           # dist/mac-arm64/Mac Notch.app
 npm run dist           # arm64 DMG + ZIP

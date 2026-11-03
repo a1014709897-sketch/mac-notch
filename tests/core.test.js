@@ -22,7 +22,7 @@ test("startup history is not completion; real completion persists until acknowle
   s.update([row("ended")], 300);
   s.update([], 1000);
   assert.equal(s.snapshot()[1].state, "ended");
-  s.acknowledge("codex");
+  s.acknowledge("codex", "a");
   assert.equal(s.snapshot()[1].state, "idle");
   s.update([row("ended")], 2000);
   assert.equal(s.snapshot()[1].state, "idle");
@@ -32,7 +32,7 @@ test("startup history is not completion; real completion persists until acknowle
 test("answered waiting resumes; missing evidence expires instead of becoming success", () => {
   const s = new TaskState();
   s.update([row("waiting")], 100);
-  s.acknowledge("codex");
+  s.acknowledge("codex", "a");
   assert.equal(s.snapshot()[1].state, "waiting");
   s.update([row("running")], 200);
   assert.equal(s.snapshot()[1].state, "running");
@@ -54,7 +54,7 @@ test("multiple sessions prioritize waiting and acknowledgement does not hide new
     ["running", "waiting"],
   );
   s.update([row("ended"), row("running", { id: "b" })], 200);
-  s.acknowledge("codex");
+  s.acknowledge("codex", "a");
   assert.equal(s.snapshot()[1].state, "running");
 });
 test("physical camera gap determines geometry, not content or state", () => {
@@ -89,4 +89,26 @@ test("remaining quota is not token usage and zero remains a valid value", () => 
   );
   assert.equal(remaining({ windows: [] }), null);
   assert.deepEqual(claudeWindows({ five_hour: { utilization: "bad" } }), []);
+});
+
+test("batch progress survives partial completion and acknowledgement, then resets for new work", () => {
+  const s = new TaskState();
+  const r = (id, state, provider = "codex") => ({ provider, id, state });
+  s.update([r("a", "running"), r("b", "running"), r("c", "running")], 100);
+  assert.deepEqual(s.snapshot()[1].progress, { done: 0, total: 3 });
+  s.update([r("a", "ended"), r("b", "waiting"), r("c", "running")], 200);
+  assert.deepEqual(s.snapshot()[1].progress, { done: 1, total: 3 });
+  assert.equal(s.snapshot()[1].animating, true);
+  assert.equal(s.snapshot()[1].state, "waiting");
+  s.acknowledge("codex");
+  assert.deepEqual(s.snapshot()[1].progress, { done: 1, total: 3 });
+  s.acknowledge("codex", "a");
+  assert.deepEqual(s.snapshot()[1].progress, { done: 0, total: 2 });
+  assert.equal(s.snapshot()[1].state, "waiting");
+  s.update([r("a", "ended"), r("b", "ended"), r("c", "ended")], 300);
+  assert.deepEqual(s.snapshot()[1].progress, { done: 2, total: 2 });
+  assert.equal(s.snapshot()[1].state, "ended");
+  s.update([r("d", "running")], 400);
+  assert.equal(s.snapshot()[1].progress, null);
+  assert.equal(s.snapshot()[1].count, 1);
 });

@@ -7,9 +7,6 @@ const test = require("node:test"),
 const {
   readCodexSessionState,
 } = require("../src/vendor/token-monitor/src/shared/providers/codex/sessionContext");
-const {
-  createTaskAttention,
-} = require("../src/vendor/token-monitor/src/electron/notch/taskAttention");
 test("asynchronous assistance tracks delivery and exact answers; new instructions supersede old questions", (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mac-notch-test-"));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -99,15 +96,4 @@ test("asynchronous assistance tracks delivery and exact answers; new instruction
   assert.equal(read().waitingForInput, false);
   append({ type: "task_started" });
   assert.equal(read().turnAborted, false);
-});
-test("foreground completion waits two seconds, switching back clears completion immediately", () => {
-  const update = createTaskAttention(),
-    r = (s) => [{ provider: "codex", taskState: s }];
-  update(r("running"), "codex", 0);
-  assert.deepEqual(update(r("ended"), "codex", 10), []);
-  assert.deepEqual(update(r("ended"), "codex", 2009), []);
-  assert.deepEqual(update(r("ended"), "codex", 2010), ["codex"]);
-  const next = createTaskAttention();
-  next(r("ended"), null, 0);
-  assert.deepEqual(next(r("ended"), "codex", 300), ["codex"]);
 });

@@ -11,6 +11,7 @@ const {
 const {
   createDesktopCompletionReader,
 } = require("../vendor/token-monitor/src/electron/notch/desktopCompletion");
+const { nativeIdForFile } = require("../vendor/token-monitor/src/shared/providers/codex/sessionIdentity");
 const home = os.homedir();
 const claudeRoot = process.env.CLAUDE_CONFIG_DIR || path.join(home, ".claude");
 const codexRoot = process.env.CODEX_HOME || path.join(home, ".codex");
@@ -94,7 +95,7 @@ async function readActivity(now = Date.now()) {
       if (typeof s.turnEnded !== "boolean" && !s.waitingForInput) continue;
       rows.push({
         provider: "codex",
-        id: path.basename(file),
+        id: nativeIdForFile(file) || path.basename(file),
         state: s.turnAborted
           ? "idle"
           : s.waitingForInput

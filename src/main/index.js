@@ -24,8 +24,8 @@ const {
 } = require("../vendor/token-monitor/src/electron/notch/screen");
 const {
   frontmostTool,
-  createTaskAttention,
 } = require("../vendor/token-monitor/src/electron/notch/taskAttention");
+const { createTaskReadState } = require("../vendor/token-monitor/src/electron/notch/taskReadState");
 const demo = process.argv.includes("--demo");
 const smoke = process.argv.includes("--smoke");
 app.setName("Mac Notch");
@@ -47,7 +47,7 @@ let notch,
   scanTimer,
   quotaTimer;
 const state = new TaskState(),
-  attention = createTaskAttention(),
+  readState = createTaskReadState(),
   trays = new Map();
 let quotas = {
   claude: { provider: "claude", windows: [], error: "尚未刷新" },
@@ -135,7 +135,7 @@ function openTool(provider) {
       );
       return;
     }
-    state.acknowledge(provider);
+    // Activation alone cannot tell which completed conversation was viewed.
     render();
   });
 }
@@ -368,11 +368,10 @@ app.whenReady().then(async () => {
   quotaTimer = setInterval(refreshQuotas, 120000);
   attentionTimer = setInterval(() => {
     if (locked || demo || smoke) return;
-    const tasks = state.snapshot().map((t) => ({ ...t, taskState: t.state }));
-    for (const provider of attention(tasks, frontmostTool(), Date.now()))
-      state.acknowledge(provider);
+    for (const task of readState(state.completed(), frontmostTool()))
+      state.acknowledge(task.provider, task.id);
     render();
-  }, 300);
+  }, 1000);
   if (smoke) {
     setTimeout(async () => {
       const results = [];
@@ -383,47 +382,130 @@ app.whenReady().then(async () => {
         ["idle", "ended"],
         ["running", "running"],
         ["waiting", "running"],
-      ];
-      for (const states of cases) {
-        notch.webContents.send("state", {
-          ...payload(),
-          tasks: PROVIDERS.map((provider, i) => ({
-            provider,
-            state: states[i],
-            count: 1,
-          })),
-        });
+      ].map((states) => ({
+        name: states.join("-"),
+        tasks: PROVIDERS.map((provider, i) => ({
+          provider,
+          state: states[i],
+          count: 1,
+        })),
+      }));
+      cases.push(
+        {
+          name: "batch-running",
+          tasks: [
+            { provider: "claude", state: "idle" },
+            {
+              provider: "codex",
+              state: "running",
+              animating: true,
+              progress: { done: 1, total: 3 },
+            },
+          ],
+        },
+        {
+          name: "batch-waiting-running",
+          tasks: [
+            {
+              provider: "claude",
+              state: "waiting",
+              animating: true,
+              progress: { done: 1, total: 2 },
+            },
+            {
+              provider: "codex",
+              state: "running",
+              animating: true,
+              progress: { done: 2, total: 3 },
+            },
+          ],
+        },
+        {
+          name: "batch-large",
+          tasks: [
+            {
+              provider: "claude",
+              state: "running",
+              animating: true,
+              progress: { done: 12, total: 128 },
+            },
+            {
+              provider: "codex",
+              state: "running",
+              animating: true,
+              progress: { done: 99, total: 128 },
+            },
+          ],
+        },
+      );
+      for (const fixture of cases) {
+        const { tasks } = fixture,
+          states = tasks.map((task) => task.state);
+        notch.webContents.send("state", { ...payload(), tasks });
         await new Promise((resolve) => setTimeout(resolve, 375));
         const result = await notch.webContents.executeJavaScript(
-          `({count:document.querySelectorAll('button.tool').length,width:innerWidth,height:innerHeight,overflow:document.body.scrollWidth>innerWidth,dots:document.querySelectorAll('.dots i').length,question:document.querySelectorAll('.question').length,check:document.querySelectorAll('.check').length,regions:[...document.querySelectorAll('.logo,.status')].filter(n=>getComputedStyle(n).display!=='none').map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};})})`,
+          `({count:document.querySelectorAll('button.tool').length,width:innerWidth,height:innerHeight,overflow:document.body.scrollWidth>innerWidth,progress:[...document.querySelectorAll('.progress')].map(n=>n.textContent),dots:document.querySelectorAll('.dots i').length,question:document.querySelectorAll('.question').length,check:document.querySelectorAll('.check').length,regions:[...document.querySelectorAll('.logo,.status,.progress')].filter(n=>getComputedStyle(n).display!=='none').map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};})})`,
         );
         result.states = states;
+        result.expectedDots =
+          tasks.filter((t) => t.state === "running" && !t.progress).length * 3;
+        result.expectedProgress = tasks
+          .filter((t) => t.state === "running" && t.progress)
+          .map((t) => `${t.progress.done}/${t.progress.total}`);
         results.push(result);
         if (process.env.MAC_NOTCH_SMOKE_OUTPUT) {
           fs.mkdirSync(process.env.MAC_NOTCH_SMOKE_OUTPUT, { recursive: true });
           fs.writeFileSync(
             path.join(
               process.env.MAC_NOTCH_SMOKE_OUTPUT,
-              states.join("-") + ".png",
+              fixture.name + ".png",
             ),
             (await notch.webContents.capturePage()).toPNG(),
           );
         }
       }
-      const iconsLoaded = [...trays.values()].length === 2 && PROVIDERS.every(provider=>!nativeImage.createFromPath(path.join(__dirname,'../../assets',`${provider}.png`)).isEmpty());
-      const panelCheck = await panel.webContents.executeJavaScript(`({quotaCards:document.querySelectorAll('#quotas article').length,bodyWidth:document.body.scrollWidth,windowWidth:innerWidth})`);
-      if(process.env.MAC_NOTCH_SMOKE_OUTPUT) fs.writeFileSync(path.join(process.env.MAC_NOTCH_SMOKE_OUTPUT,'quotas.png'),(await panel.webContents.capturePage()).toPNG());
-      const ok = iconsLoaded && panelCheck.quotaCards===2 && panelCheck.bodyWidth<=panelCheck.windowWidth && results.every(
-        (r) =>
-          !r.overflow &&
-          r.width === results[0].width &&
-          r.height === results[0].height &&
-          (!geometry.hardware || r.regions.every(region=>region.right<=(geometry.width-geometry.gap)/2+1 || region.left>=(geometry.width+geometry.gap)/2-1)) &&
-          r.dots === r.states.filter((s) => s === "running").length * 3 &&
-          r.question === r.states.filter((s) => s === "waiting").length &&
-          r.check === r.states.filter((s) => s === "ended").length,
+      const iconsLoaded =
+        [...trays.values()].length === 2 &&
+        PROVIDERS.every(
+          (provider) =>
+            !nativeImage
+              .createFromPath(
+                path.join(__dirname, "../../assets", `${provider}.png`),
+              )
+              .isEmpty(),
+        );
+      const panelCheck = await panel.webContents.executeJavaScript(
+        `({quotaCards:document.querySelectorAll('#quotas article').length,bodyWidth:document.body.scrollWidth,windowWidth:innerWidth})`,
       );
-      console.log("SMOKE", JSON.stringify({ ok, iconsLoaded, panelCheck, results }));
+      if (process.env.MAC_NOTCH_SMOKE_OUTPUT)
+        fs.writeFileSync(
+          path.join(process.env.MAC_NOTCH_SMOKE_OUTPUT, "quotas.png"),
+          (await panel.webContents.capturePage()).toPNG(),
+        );
+      const ok =
+        iconsLoaded &&
+        panelCheck.quotaCards === 2 &&
+        panelCheck.bodyWidth <= panelCheck.windowWidth &&
+        results.every(
+          (r) =>
+            !r.overflow &&
+            r.width === results[0].width &&
+            r.height === results[0].height &&
+            (!geometry.hardware ||
+              r.regions.every(
+                (region) =>
+                  region.right <= (geometry.width - geometry.gap) / 2 + 1 ||
+                  region.left >= (geometry.width + geometry.gap) / 2 - 1,
+              )) &&
+            r.dots === r.expectedDots &&
+            JSON.stringify(r.progress) === JSON.stringify(r.expectedProgress) &&
+            r.question === r.states.filter((s) => s === "waiting").length &&
+            r.check === r.states.filter((s) => s === "ended").length,
+        );
+      console.log(
+        "SMOKE",
+        JSON.stringify({ ok, iconsLoaded, panelCheck, results }),
+      );
       app.exit(ok ? 0 : 1);
     }, 1000);
   }

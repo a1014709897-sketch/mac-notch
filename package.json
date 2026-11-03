@@ -31,7 +31,7 @@
     "electron-builder": "26.18.1"
   },
   "build": {
-    "appId": "io.github.macnotch.app",
+    "appId": "io.github.wjiejie2.macnotch",
     "productName": "Mac Notch",
     "directories": {
       "output": "dist"
@@ -62,5 +62,13 @@
       "icon": "assets/app.icns"
     },
     "artifactName": "Mac-Notch-${version}-${arch}.${ext}"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wjiejie2/mac-notch.git"
+  },
+  "homepage": "https://github.com/wjiejie2/mac-notch#readme",
+  "bugs": {
+    "url": "https://github.com/wjiejie2/mac-notch/issues"
   }
 }

@@ -20,7 +20,7 @@ npm run checksums
 
 ## 发布身份
 
-暂定产品名 Mac Notch，bundle ID `io.github.macnotch.app`。公开首发前请决定长期仓库与 bundle ID，避免未来用户的安全存储/登录启动身份变化。没有绑定 Token Monitor 的更新源。
+产品名 Mac Notch，仓库 `wjiejie2/mac-notch`，bundle ID `io.github.wjiejie2.macnotch`。首发后保持此身份，避免用户的安全存储/登录启动身份变化。没有绑定 Token Monitor 的更新源。
 
 当前固定使用 `build.mac.identity="-"` 生成 ad-hoc 签名产物，关闭 hardened runtime 和自动公证；本地 `codesign --verify --deep --strict` 已通过。这种签名没有 Apple Developer ID 身份，也没有公证。Gatekeeper 对从互联网下载的未公证应用可能阻止启动。这不是面向普通用户的最终分发签名状态，不应宣传“已公证”。不提供关闭系统安全检查的安装步骤。
 
@@ -28,13 +28,13 @@ npm run checksums
 
 ## GitHub
 
-该目录可直接作为独立仓库根目录。CI 在 macOS 构建两个架构并保存 artifacts，不自动发布 Release。当前任务只准备本地项目与包，不创建远端仓库、不推送、不发布。
+发布目标为 https://github.com/wjiejie2/mac-notch 。CI 在 macOS 构建两个架构并保存 artifacts，不自动发布 Release。
 
 ```sh
-git init -b main
-git add .
-git commit -m "feat: create standalone macOS notch companion"
-# 在确定自己的 GitHub 仓库地址后配置 origin 并推送。
+npm run release:local
+# 检查安装包、确认工作区干净，再推送提交和版本标签。
 ```
 
-发布检查：许可证和第三方说明完整；README 不包含本机路径；截图使用演示数据；真实账号与双架构人工验收完成；签名与公证状态准确；Release 附 SHA256 校验文件。
+首发说明使用 `docs/releases/v0.1.0.md`，附件包括 DMG、应用 ZIP、源码 ZIP 和 SHA256SUMS.txt。发布后核对远端标签对应的提交和附件摘要。
+
+发布检查：许可证和第三方说明完整；README 不包含本机路径；截图使用演示数据；明确人工验收与平台范围；签名与公证状态准确；Release 附 SHA256 校验文件。

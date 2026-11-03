@@ -7,7 +7,7 @@ flowchart LR
  C[Codex 本地线程目录/JSONL] --> A[activity 只读适配]
  L[Claude 注册表/桌面元数据] --> A
  A --> S[TaskState 按会话聚合]
- F[前台应用/2秒确认] --> S
+ F[会话已读信号/前台应用] --> S
  S --> N[无文案刘海]
  Q[厂商额度接口] --> M[独立额度缓存]
  M --> T[两个彩色菜单栏项目]
@@ -18,9 +18,9 @@ flowchart LR
 ## 模块
 
 - `src/main/activity.js`：2 秒串行状态扫描；5 秒缓存 Codex 候选目录，SQLite 最多 128 条、总候选最多 256。读取文件限制在 Codex sessions 根目录，Claude 注册记录有大小上限和 PID/启动时间检查。
-- `src/main/state.js`：会话级状态机、启动历史抑制、完成已读和活动过期，不混入 token 账单逻辑。
+- `src/main/state.js`：会话级状态机、独立多任务批次、部分完成统计与活动过期。已读确认需要 provider + session ID，不按整个工具批量清除。
 - `src/main/quotas.js`：有限厂商域名的只读额度请求；不启动 CLI 探测、不刷新厂商令牌。状态请求与额度请求独立，扫描不会触发频繁联网。
-- `src/main/index.js`：独立窗口和菜单栏生命周期、300ms 前台检测、显示器/锁屏处理、IPC 所有者验证。
+- `src/main/index.js`：独立窗口和菜单栏生命周期、1 秒前台与会话已读检测、显示器/锁屏处理、IPC 所有者验证。
 - `src/main/store.js`：独立 `Mac Notch/settings.json`，手工凭据使用 safeStorage 加密；public DTO 不包含密钥。
 - `src/main/layout.js`：从 AppKit safeArea 得到硬件摄像头区域，固定翼宽。没有沿用原应用的动态内容扩宽或下方文案实验。
 - `src/vendor/token-monitor`：有限的 MIT 复用代码，保留目录结构以便追踪来源。DSH 两个文件仅用于压缩帧解析，不启用 DSH 客户端。
@@ -34,5 +34,7 @@ flowchart LR
 窗口启用 contextIsolation、sandbox、CSP、禁用 nodeIntegration，拒绝导航与新窗口。启动客户端只从内置 bundle ID 白名单选择。
 
 ## 未实现的能力
+
+Codex 已读来自本机 `electron-thread-read-state-v1` 的 local 线程未读变化；Claude 已读来自对应桌面会话的 `lastFocusedAt` 增长，并要求发生在完成之后。仅应用切到前台不构成已读证据。
 
 没有会话级深链、远程 Agent 状态、所有原生权限弹窗检测、自动登录令牌续期、永久任务数据库。客户端协议变化可能导致状态退回空闲或额度显示错误，必须用真实版本回归。
