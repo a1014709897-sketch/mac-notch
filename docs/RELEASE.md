@@ -46,3 +46,7 @@ v0.2.1 体验版说明使用 `docs/releases/v0.2.1.md`，附件包括 DMG、应�
 本地构建 arm64 安装包并通过打包版 smoke 后，将应用 ZIP 的 SHA-256 固定写入 `site/install.sh`，再生成源码 ZIP 和校验清单。源码包需包含最终版本的安装脚本和文档。提交全部变更，版本标签与提交绑定，远端 CI 通过后发布 GitHub prerelease，并部署官网。官网和 README 明确链接 `releases/tag/v0.2.1`，避免 `latest` 跳到旧稳定版。
 
 发布后检查附件摘要，运行公开安装脚本的 `--verify-only`，确认下载的版本、应用身份、签名完整性及 SHA-256 一致。此检查不等于 Gatekeeper 认可，也不替代另一台 Mac 的安装验收。
+
+## v0.2.1 Intel 补充发布
+
+Intel DMG / ZIP 使用与标签提交 `b88d1cc84869a0e08a36a8828be67f0686a86d9d` 一致的应用源码和依赖在本机交叉构建；该标签的 GitHub Actions `41610614041` 也已通过 x64 构建。不移动版本标签、不替换既有 arm64 安装包和版本源码归档。更新 Release 附件及合并校验清单后，再推送官网安装脚本。脚本分别固定 arm64 / x64 的 SHA-256，使用 `hw.optional.arm64` 优先识别真实 Apple Silicon 硬件，避免 Rosetta shell 被误判成 Intel。网站和安装脚本补充修改记录在后续 main 提交；原版本源码归档仍准确对应原标签。

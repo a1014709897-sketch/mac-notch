@@ -43,7 +43,7 @@
       <div class="hero-actions">
         <a class="button" href="#install">一键安装 <svg aria-hidden="true"><use href="#arrow"/></svg></a>
       </div>
-      <p class="hero-meta">免费开源 · macOS 13 及以上 · Apple 芯片</p>
+      <p class="hero-meta">免费开源 · macOS 13 及以上 · Apple 芯片 / Intel</p>
     </section>
 
     <section class="playground shell" id="playground" aria-label="Mac Notch 交互演示">
@@ -127,7 +127,7 @@
           <div class="terminal-body"><div class="terminal-code"><span class="prompt" aria-hidden="true">$</span><code id="install-command">curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash</code></div><button class="copy-button" type="button" id="copy-command"><svg aria-hidden="true"><use href="#copy"/></svg><span>复制命令</span></button></div>
           <span id="copy-result" class="sr-only" role="status"></span>
         </div>
-        <p class="install-meta">v0.2.1 体验版 · macOS 13 及以上 · Apple 芯片 · 未经 Apple 公证</p>
+        <p class="install-meta">v0.2.1 体验版 · macOS 13 及以上 · Apple 芯片 / Intel · 未经 Apple 公证</p>
         <p class="install-meta"><a href="https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.1">下载安装包与查看体验说明</a>。首次打开可能被 macOS 阻止，请先阅读版本说明。</p>
       </div>
     </section>
@@ -135,7 +135,7 @@
     <section class="faq shell section" id="faq" aria-labelledby="faq-title">
       <div class="section-heading"><h2 id="faq-title">常见问题</h2></div>
       <div class="faq-list">
-        <details><summary>支持哪些 Mac？没有刘海也能用吗？<span aria-hidden="true">+</span></summary><p>支持搭载 Apple 芯片（M 系列）、运行 macOS 13 或更高版本的 Mac。没有刘海的屏幕也能显示状态条，多任务计数会按需扩宽。体验版暂不提供 Intel 安装包。</p></details>
+        <details><summary>支持哪些 Mac？没有刘海也能用吗？<span aria-hidden="true">+</span></summary><p>支持 Apple 芯片（M 系列）和 Intel Mac，要求 macOS 13 或更高版本；安装命令会自动选择对应架构。没有刘海的屏幕也能显示状态条，多任务计数会按需扩宽。Intel 版为体验包，欢迎反馈真机兼容性问题。</p></details>
         <details><summary>免费吗？需要另外注册账号吗？<span aria-hidden="true">+</span></summary><p>Mac Notch 免费开源，不需要注册账号。额度查询使用你已有的 Claude 或 Codex 订阅。如果没有获取 Claude 状态，请运行 Claude Code CLI（claude），完成订阅账号登录后刷新。<a href="https://github.com/a1014709897-sketch/mac-notch#登录与额度">查看登录说明</a></p></details>
         <details><summary>只用 Claude 或 Codex 其中一个，可以吗？<span aria-hidden="true">+</span></summary><p>可以。首次打开时选择你使用的工具，之后也能在设置中分别开关。关闭的工具不会再显示图标或查询额度。</p></details>
         <details><summary>任务完成后，提醒什么时候消失？<span aria-hidden="true">+</span></summary><p>完成通知默认开启，可在设置中关闭；关闭后保留任务状态，重新开启不补弹旧通知。通知默认显示 5 秒，悬停暂停。切回对应工具并持续停留约 1–2 秒，会消除该工具已有的完成提醒；这不改变客户端自己的已读状态。需要协助时，要实际回应或让任务继续，问号才会消失。</p></details>

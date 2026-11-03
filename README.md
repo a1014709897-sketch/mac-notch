@@ -30,7 +30,7 @@
 
 ## 下载
 
-[GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。v0.2.1 为小范围体验版，使用 ad-hoc 签名，尚未 Apple Developer ID 公证，macOS 可能阻止打开。
+[GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon（arm64）和 Intel（x64）的 DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。v0.2.1 为小范围体验版，使用 ad-hoc 签名，尚未 Apple Developer ID 公证，macOS 可能阻止打开。
 
 也可以把这条命令发给有终端权限的 Agent，或在自己的 Mac 终端运行：
 
@@ -38,11 +38,11 @@
 curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash
 ```
 
-[安装脚本](site/install.sh) 固定下载当前已验证的版本，检查系统、SHA-256、应用身份和签名完整性后安装到 `~/Applications`。无需 sudo；不会覆盖已有应用，也不会关闭 macOS 安全保护。安装后从用户 Applications 文件夹打开。仅验证不安装可在命令末尾使用 `bash -s -- --verify-only`。网站源码、部署和域名配置见 [网站维护说明](docs/WEBSITE.md)。
+[安装脚本](site/install.sh) 固定下载当前已验证的版本，自动识别 Apple Silicon / Intel 并选择对应安装包，检查系统、SHA-256、应用身份和签名完整性后安装到 `~/Applications`。无需 sudo；不会覆盖已有应用，也不会关闭 macOS 安全保护。安装后从用户 Applications 文件夹打开。仅验证不安装可在命令末尾使用 `bash -s -- --verify-only`。网站源码、部署和域名配置见 [网站维护说明](docs/WEBSITE.md)。
 
 ## 快速开始
 
-要求：macOS 13+、Node.js 22.15+（建议 Node 24）、npm。首发本地构建为 Apple Silicon；Intel 构建命令和 CI 可用，但需要在 Intel Mac 上单独验收。
+要求：macOS 13+、Node.js 22.15+（建议 Node 24）、npm。默认本地构建为 Apple Silicon，Intel 使用 `npm run dist:x64`。两种体验包均可下载，仍需在 Intel 真机上验收。
 
 ```sh
 npm ci

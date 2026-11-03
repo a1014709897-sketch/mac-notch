@@ -23,7 +23,7 @@ Open http://127.0.0.1:4173. Rebuild and reload after changing files. The build v
 curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash
 ```
 
-The script is readable at the same URL and in `site/install.sh`. It downloads the **fixed v0.2.1 prerelease** Apple Silicon ZIP from GitHub Releases and compares it against the SHA-256 recorded in source. It verifies the bundle ID, version, and ad-hoc signature integrity before copying into `~/Applications`. It does not request root, overwrite an existing app, launch it, delete settings, modify proxy settings, or change Gatekeeper/quarantine attributes. Ad-hoc integrity validation is not Apple Developer ID notarization.
+The script is readable at the same URL and in `site/install.sh`. It downloads the **fixed v0.2.1 prerelease** Apple Silicon or Intel ZIP from GitHub Releases, selected by hardware architecture (including Apple Silicon shells under Rosetta), and compares it against the architecture-specific SHA-256 recorded in source. It verifies the bundle ID, version, and ad-hoc signature integrity before copying into `~/Applications`. It does not request root, overwrite an existing app, launch it, delete settings, modify proxy settings, or change Gatekeeper/quarantine attributes. Ad-hoc integrity validation is not Apple Developer ID notarization.
 
 For a download and validation run without installation:
 

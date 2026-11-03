@@ -8,7 +8,7 @@ const { spawnSync } = require("node:child_process");
 const installer = path.resolve(__dirname, "../site/install.sh");
 const installerText = fs.readFileSync(installer, "utf8");
 const releaseVersion = installerText.match(/local version="([^"]+)"/)[1];
-const releaseChecksum = installerText.match(/local checksum="([a-f0-9]{64})"/)[1];
+const releaseChecksums = Object.fromEntries(["arm64","x64"].map(arch => [arch, installerText.match(new RegExp(`local ${arch}_checksum="([a-f0-9]{64})"`))[1]]));
 
 function harness(t, options = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "mac-notch-installer-test-"));
@@ -16,12 +16,12 @@ function harness(t, options = {}) {
   const home = path.join(root, "home"), bin = path.join(root, "bin"), tmp = path.join(root, "tmp");
   for (const dir of [home, bin, tmp]) fs.mkdirSync(dir);
   const writeCommand = (name, contents) => fs.writeFileSync(path.join(bin, name), `#!/bin/bash\nset -e\n${contents}\n`, { mode: 0o755 });
-  writeCommand("uname", `echo ${options.platform || "Darwin"}`);
+  writeCommand("uname", `if [ "$1" = -m ]; then echo ${options.machine || "arm64"}; else echo ${options.platform || "Darwin"}; fi`);
   writeCommand("sw_vers", `echo ${options.version || "13.0"}`);
-  writeCommand("sysctl", `echo ${options.arm64 ?? "1"}`);
+  writeCommand("sysctl", options.sysctlFailure ? "exit 1" : `echo ${options.arm64 ?? "1"}`);
   writeCommand("id", `echo ${options.uid ?? "501"}`);
-  writeCommand("curl", `touch "$TEST_ROOT/network-used"\nif [ "${options.networkFailure || false}" = true ]; then exit 22; fi\nwhile [ "$#" -gt 0 ]; do\n if [ "$1" = --output ]; then shift; printf 'release fixture' > "$1"; exit 0; fi\n shift\ndone\nexit 1`);
-  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : releaseChecksum}  fixture.zip'`);
+  writeCommand("curl", `printf '%s\\n' "$@" > "$TEST_ROOT/download-args"\ntouch "$TEST_ROOT/network-used"\nif [ "${options.networkFailure || false}" = true ]; then exit 22; fi\nwhile [ "$#" -gt 0 ]; do\n if [ "$1" = --output ]; then shift; printf 'release fixture' > "$1"; exit 0; fi\n shift\ndone\nexit 1`);
+  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : releaseChecksums[options.expectedArch || "arm64"]}  fixture.zip'`);
   writeCommand("ditto", `touch "$TEST_ROOT/extraction-used"\nif [ "$1" = -x ]; then\n mkdir -p "$4/Mac Notch.app/Contents"\n cat > "$4/Mac Notch.app/Contents/Info.plist" <<'PLIST'\n<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${options.badBundle ? "unexpected.app" : "io.github.a1014709897-sketch.macnotch"}</string><key>CFBundleShortVersionString</key><string>${releaseVersion}</string></dict></plist>\nPLIST\nelse\n cp -R "$1" "$2"\nfi`);
   writeCommand("codesign", `touch "$TEST_ROOT/signature-checked"\nexit ${options.badSignature ? "1" : "0"}`);
   const dest = path.join(home, "Applications/Mac Notch.app");
@@ -36,7 +36,7 @@ function harness(t, options = {}) {
 }
 
 test("installer rejects unsupported systems before accessing the network", t => {
-  for (const options of [{ platform: "Linux" }, { version: "12.7" }, { version: "unknown" }, { arm64: "0" }, { uid: "0" }]) {
+  for (const options of [{ platform: "Linux" }, { version: "12.7" }, { version: "unknown" }, { arm64: "0", machine: "unknown" }, { uid: "0" }]) {
     const h = harness(t, options), result = h.run();
     assert.notEqual(result.status, 0, JSON.stringify(options));
     assert.equal(fs.existsSync(path.join(h.root, "network-used")), false);
@@ -105,4 +105,19 @@ test("website and installer explicitly target this prerelease instead of latest"
   assert.ok(html.includes(`releases/tag/v${version}`));
   assert.ok(html.includes(`v${version} 体验版`));
   assert.equal(html.includes("releases/latest"), false);
+});
+
+for (const [name, options, arch] of [
+  ["native Apple Silicon", {}, "arm64"],
+  ["Rosetta shell on Apple Silicon", {machine:"x86_64",arm64:"1"}, "arm64"],
+  ["Intel Mac", {machine:"x86_64",arm64:"0",expectedArch:"x64"}, "x64"],
+  ["Intel without optional arm64 sysctl", {machine:"x86_64",sysctlFailure:true,expectedArch:"x64"}, "x64"],
+  ["Apple Silicon without optional arm64 sysctl", {machine:"arm64",sysctlFailure:true}, "arm64"],
+]) test(`installer selects the matching archive and checksum for ${name}`, {skip:process.platform!=="darwin"}, t=>{
+  const h=harness(t,options),result=h.run("--verify-only");
+  assert.equal(result.status,0,result.stdout+result.stderr);
+  const args=fs.readFileSync(path.join(h.root,"download-args"),"utf8");
+  assert.ok(args.includes(`/v${releaseVersion}/Mac-Notch-${releaseVersion}-${arch}.zip`),args);
+  assert.equal(fs.existsSync(h.dest),false);
+  assert.match(result.stdout,/no application installed or launched/);
 });

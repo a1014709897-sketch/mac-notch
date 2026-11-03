@@ -6,14 +6,15 @@ set -euo pipefail
 
 main() {
   local version="0.2.1"
-  local checksum="e8168ed93294347aeb159f0475639fc2b441700c4fd632983e2438a60083bd44"
+  local arm64_checksum="e8168ed93294347aeb159f0475639fc2b441700c4fd632983e2438a60083bd44"
+  local x64_checksum="ca322fc44b71b6db94ef135a05c068f2b48e7b731bd7171a200f837e99a5a196"
+  local architecture checksum url
   local bundle_id="io.github.a1014709897-sketch.macnotch"
-  local url="https://github.com/a1014709897-sketch/mac-notch/releases/download/v${version}/Mac-Notch-${version}-arm64.zip"
   local verify_only=0
   case "${1:-}" in
     --verify-only) verify_only=1 ;;
     --help|-h)
-      printf '%s\n' 'Mac Notch installer — macOS 13+, Apple Silicon' \
+      printf '%s\n' 'Mac Notch installer — macOS 13+, Apple Silicon and Intel' \
         'Usage: bash install.sh [--verify-only]' \
         'Installs v0.2.1 into ~/Applications; existing apps are never overwritten.' \
         '--verify-only: download and verify the release without installing or launching.'
@@ -30,9 +31,16 @@ main() {
   case "$major" in ''|*[!0-9]*) printf '%s\n' 'Cannot determine macOS version.' >&2; return 1 ;; esac
   if [ "$major" -lt 13 ]; then printf '%s\n' 'macOS 13 or newer is required.' >&2; return 1; fi
   # hw.optional.arm64 remains 1 when a shell is running under Rosetta.
-  if [ "$(sysctl -n hw.optional.arm64 2>/dev/null || true)" != "1" ]; then
-    printf '%s\n' 'This release supports Apple Silicon only. Intel binaries are not published yet.' >&2; return 1
+  if [ "$(sysctl -n hw.optional.arm64 2>/dev/null || true)" = "1" ]; then
+    architecture="arm64"; checksum="$arm64_checksum"
+  else
+    case "$(uname -m)" in
+      arm64) architecture="arm64"; checksum="$arm64_checksum" ;;
+      x86_64) architecture="x64"; checksum="$x64_checksum" ;;
+      *) printf '%s\n' 'Unsupported Mac architecture; expected Apple Silicon or Intel x86_64.' >&2; return 1 ;;
+    esac
   fi
+  url="https://github.com/a1014709897-sketch/mac-notch/releases/download/v${version}/Mac-Notch-${version}-${architecture}.zip"
   if [ "$(id -u)" = "0" ]; then
     printf '%s\n' 'Run as your normal macOS user. Do not use sudo.' >&2; return 1
   fi
@@ -49,7 +57,7 @@ main() {
   MAC_NOTCH_INSTALL_TEMP="$workspace"
   MAC_NOTCH_INSTALL_STAGE=""
   trap 'rm -rf -- "$MAC_NOTCH_INSTALL_TEMP"; if [ -n "$MAC_NOTCH_INSTALL_STAGE" ]; then rm -rf -- "$MAC_NOTCH_INSTALL_STAGE"; fi' EXIT
-  printf '%s\n' "Downloading Mac Notch v${version} from GitHub Releases…"
+  printf '%s\n' "Downloading Mac Notch v${version} (${architecture}) from GitHub Releases…"
   curl --fail --location --show-error --silent --proto '=https' --tlsv1.2 \
     --retry 3 --connect-timeout 15 --max-time 600 --output "$workspace/app.zip" "$url"
   local actual
@@ -71,7 +79,7 @@ main() {
   fi
   codesign --verify --deep --strict "$app"
   if [ "$verify_only" = "1" ]; then
-    printf '%s\n' "Verified Mac Notch v${version}: archive, SHA-256, bundle identity, and ad-hoc signature integrity." \
+    printf '%s\n' "Verified Mac Notch v${version} (${architecture}): archive, SHA-256, bundle identity, and ad-hoc signature integrity." \
       'Verify-only: no application installed or launched.'
     return 0
   fi
