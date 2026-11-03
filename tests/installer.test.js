@@ -18,8 +18,8 @@ function harness(t, options = {}) {
   writeCommand("sysctl", `echo ${options.arm64 ?? "1"}`);
   writeCommand("id", `echo ${options.uid ?? "501"}`);
   writeCommand("curl", `touch "$TEST_ROOT/network-used"\nif [ "${options.networkFailure || false}" = true ]; then exit 22; fi\nwhile [ "$#" -gt 0 ]; do\n if [ "$1" = --output ]; then shift; printf 'release fixture' > "$1"; exit 0; fi\n shift\ndone\nexit 1`);
-  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : "e683ddc7f0542cf1305afa3a28f0caf09060aad53d9d136b15cee0edd2895005"}  fixture.zip'`);
-  writeCommand("ditto", `touch "$TEST_ROOT/extraction-used"\nif [ "$1" = -x ]; then\n mkdir -p "$4/Mac Notch.app/Contents"\n cat > "$4/Mac Notch.app/Contents/Info.plist" <<'PLIST'\n<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${options.badBundle ? "unexpected.app" : "io.github.a1014709897-sketch.macnotch"}</string><key>CFBundleShortVersionString</key><string>0.1.0</string></dict></plist>\nPLIST\nelse\n cp -R "$1" "$2"\nfi`);
+  writeCommand("shasum", `echo '${options.badHash ? "incorrect" : "41ffe28d1c021395d03f850dfb61cbe055ee762f62d040a9f3fc27f663918c37"}  fixture.zip'`);
+  writeCommand("ditto", `touch "$TEST_ROOT/extraction-used"\nif [ "$1" = -x ]; then\n mkdir -p "$4/Mac Notch.app/Contents"\n cat > "$4/Mac Notch.app/Contents/Info.plist" <<'PLIST'\n<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>${options.badBundle ? "unexpected.app" : "io.github.a1014709897-sketch.macnotch"}</string><key>CFBundleShortVersionString</key><string>0.2.0</string></dict></plist>\nPLIST\nelse\n cp -R "$1" "$2"\nfi`);
   writeCommand("codesign", `touch "$TEST_ROOT/signature-checked"\nexit ${options.badSignature ? "1" : "0"}`);
   const dest = path.join(home, "Applications/Mac Notch.app");
   if (options.existing) {

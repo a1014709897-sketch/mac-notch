@@ -5,8 +5,8 @@
 set -euo pipefail
 
 main() {
-  local version="0.1.0"
-  local checksum="e683ddc7f0542cf1305afa3a28f0caf09060aad53d9d136b15cee0edd2895005"
+  local version="0.2.0"
+  local checksum="41ffe28d1c021395d03f850dfb61cbe055ee762f62d040a9f3fc27f663918c37"
   local bundle_id="io.github.a1014709897-sketch.macnotch"
   local url="https://github.com/a1014709897-sketch/mac-notch/releases/download/v${version}/Mac-Notch-${version}-arm64.zip"
   local verify_only=0
@@ -15,7 +15,7 @@ main() {
     --help|-h)
       printf '%s\n' 'Mac Notch installer — macOS 13+, Apple Silicon' \
         'Usage: bash install.sh [--verify-only]' \
-        'Installs v0.1.0 into ~/Applications; existing apps are never overwritten.' \
+        'Installs v0.2.0 into ~/Applications; existing apps are never overwritten.' \
         '--verify-only: download and verify the release without installing or launching.'
       return 0 ;;
     '') ;;
