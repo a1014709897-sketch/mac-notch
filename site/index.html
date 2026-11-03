@@ -42,7 +42,6 @@
       <p class="hero-description">在 Mac 顶部查看 Claude 和 Codex 的任务状态与剩余额度。</p>
       <div class="hero-actions">
         <a class="button" href="#install">一键安装 <svg aria-hidden="true"><use href="#arrow"/></svg></a>
-        <a class="text-link" href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">前往 GitHub 下载 <span aria-hidden="true">↗</span></a>
       </div>
       <p class="hero-meta">免费开源 · macOS 13 及以上 · Apple 芯片</p>
     </section>
@@ -73,7 +72,6 @@
           <p class="quota-disclaimer">示例数据，不读取你的账号。</p>
         </div>
         <div class="demo-toast" id="demo-toast" role="status"></div>
-        <div class="desktop-footer"><span>交互演示 · 示例数据</span></div>
       </div>
       <div class="demo-controls">
         <div class="state-controls segmented" role="group" aria-label="选择演示状态">
@@ -86,10 +84,6 @@
           <button type="button" data-tool="both" aria-pressed="true">全部</button>
           <button type="button" data-tool="claude" aria-pressed="false">Claude</button>
           <button type="button" data-tool="codex" aria-pressed="false">Codex</button>
-        </div>
-        <div class="demo-actions">
-          <button type="button" class="quiet-button" id="preview-quotas" aria-controls="quota-panel" aria-expanded="false">查看额度</button>
-          <button type="button" class="quiet-button" id="motion-toggle" aria-pressed="false">暂停动画</button>
         </div>
       </div>
       <p class="sr-only" id="demo-status" aria-live="polite"></p>
@@ -123,7 +117,6 @@
           <div class="feature-copy"><h3>多个任务，分别提醒</h3><p>查看一个任务后，其他任务的提醒仍会保留。</p></div>
         </article>
       </div>
-      <div class="privacy-note"><p>任务状态在本机读取，额度查询直接连接对应服务。</p><a href="https://github.com/a1014709897-sketch/mac-notch/blob/main/SECURITY.md">了解隐私保护 <span aria-hidden="true">↗</span></a></div>
     </section>
 
     <section class="install-section section" id="install" aria-labelledby="install-title">
@@ -134,8 +127,7 @@
           <div class="terminal-body"><div class="terminal-code"><span class="prompt" aria-hidden="true">$</span><code id="install-command">curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash</code></div><button class="copy-button" type="button" id="copy-command"><svg aria-hidden="true"><use href="#copy"/></svg><span>复制命令</span></button></div>
           <span id="copy-result" class="sr-only" role="status"></span>
         </div>
-        <div class="install-meta"><p>v0.1.0 · macOS 13 及以上 · Apple 芯片</p><div class="install-links"><a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">手动下载 <span aria-hidden="true">↗</span></a><a href="./install.sh">查看安装脚本 <span aria-hidden="true">↗</span></a></div></div>
-        <p class="release-note">当前为测试版，尚未通过 Apple 公证；首次打开可能被 macOS 拦截。<a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">查看安装说明</a></p>
+        <p class="install-meta">v0.1.0 · macOS 13 及以上 · Apple 芯片</p>
       </div>
     </section>
 
@@ -153,7 +145,7 @@
   </main>
 
   <footer class="site-footer shell">
-    <div class="footer-top"><a class="brand" href="#"><span class="brand-notch" aria-hidden="true"><i></i><i></i></span>Mac Notch</a><div class="footer-links"><a href="https://github.com/a1014709897-sketch/mac-notch">开源代码</a><a href="https://github.com/a1014709897-sketch/mac-notch/releases/latest">版本下载</a><a href="https://github.com/a1014709897-sketch/mac-notch/issues">反馈问题</a><a href="https://github.com/a1014709897-sketch/mac-notch/blob/main/THIRD_PARTY_NOTICES.md">来源与致谢</a></div></div>
+    <a class="brand" href="#"><span class="brand-notch" aria-hidden="true"><i></i><i></i></span>Mac Notch</a>
     <p class="footer-legal">独立开源项目，非 Anthropic 或 OpenAI 官方产品。部分代码与图标源自 <a href="https://github.com/Javis603/token-monitor">Token Monitor</a>，遵循 MIT 许可。</p>
   </footer>
 </body>

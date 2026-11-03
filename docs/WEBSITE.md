@@ -54,7 +54,7 @@ ICP filing and domain registration are separate. For non-mainland hosting, an un
 - Desktop and mobile: no horizontal overflow, navigation and typography readable, download/script links work under `/mac-notch/`.
 - Cycle idle/running/waiting/ended, switch tool, verify notch width unchanged and three dots on both tools.
 - Idle always shows both companions. A single active tool has a full-bar click target.
-- The quota button, double click, or Q while a notch button is focused opens the simulated quota panel; Escape, close and outside click dismiss it. Verify focus returns to the trigger after Escape and the quota button's expanded state updates.
+- Double click, or Q while a notch button is focused, opens the simulated quota panel; Escape, close and outside click dismiss it. Verify focus returns to the trigger after Escape.
 - Clipboard button copies the exact published command; permission failure selects the command and explains manual copy.
-- FAQ opens with keyboard, animation can be paused, and system reduced motion is respected.
+- FAQ opens with keyboard, and system reduced motion is respected.
 - Public installer downloads and verifies the real published ZIP with `--verify-only`.

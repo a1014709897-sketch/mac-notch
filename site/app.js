@@ -4,9 +4,7 @@
   const notch = document.querySelector("#demo-notch");
   const quota = document.querySelector("#quota-panel");
   const toast = document.querySelector("#demo-toast");
-  const motionButton = document.querySelector("#motion-toggle");
   const copyButton = document.querySelector("#copy-command");
-  const quotaButton = document.querySelector("#preview-quotas");
   let state = "running", tool = "both", clickTimer, toastTimer, copyTimer;
   let lastQuotaTrigger = null;
   const names = { both: "Claude + Codex", claude: "Claude", codex: "Codex" };
@@ -47,7 +45,6 @@
   function closeQuota(restoreFocus = false) {
     if (quota.hidden) return;
     quota.hidden = true;
-    quotaButton.setAttribute("aria-expanded", "false");
     if (restoreFocus && lastQuotaTrigger && !lastQuotaTrigger.hidden) lastQuotaTrigger.focus();
   }
   function toggleQuota(trigger) {
@@ -55,10 +52,8 @@
     if (!quota.hidden) { closeQuota(true); return; }
     lastQuotaTrigger = trigger;
     quota.hidden = false;
-    quotaButton.setAttribute("aria-expanded", "true");
     document.querySelector("#close-quotas").focus();
   }
-  quotaButton.addEventListener("click", () => toggleQuota(quotaButton));
   function showToast(message) {
     clearTimeout(toastTimer);
     toast.textContent = message;
@@ -101,18 +96,7 @@
   });
   document.querySelector("#close-quotas").addEventListener("click", () => closeQuota(true));
   document.addEventListener("keydown", event => { if (event.key === "Escape") closeQuota(true); });
-  document.addEventListener("click", event => { if (!quota.contains(event.target) && !notch.contains(event.target) && !quotaButton.contains(event.target)) closeQuota(); });
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  function setMotion(paused) {
-    document.body.classList.toggle("motion-paused", paused);
-    motionButton.setAttribute("aria-pressed", String(paused));
-    motionButton.textContent = paused ? "继续动画" : "暂停动画";
-    if (reducedMotion.matches) motionButton.textContent = "动画已关闭";
-    motionButton.disabled = reducedMotion.matches;
-  }
-  setMotion(reducedMotion.matches);
-  reducedMotion.addEventListener("change", () => setMotion(reducedMotion.matches));
-  motionButton.addEventListener("click", () => setMotion(!document.body.classList.contains("motion-paused")));
+  document.addEventListener("click", event => { if (!quota.contains(event.target) && !notch.contains(event.target)) closeQuota(); });
   copyButton.addEventListener("click", async () => {
     const command = document.querySelector("#install-command").textContent;
     try {
