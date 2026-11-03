@@ -17,7 +17,9 @@ const { execFile } = require("node:child_process");
 const { TaskState, PROVIDERS } = require("./state");
 const { readActivity } = require("./activity");
 const { readQuota, remaining } = require("./quotas");
-const { layout } = require("./layout");
+const { layout, expandedLayout } = require("./layout");
+const { Worker } = require("node:worker_threads");
+const { summarize } = require("./usage");
 const { createStore } = require("./store");
 const {
   readMacNotchScreens,
@@ -25,10 +27,21 @@ const {
 const {
   frontmostTool,
 } = require("../vendor/token-monitor/src/electron/notch/taskAttention");
-const { createTaskReadState } = require("../vendor/token-monitor/src/electron/notch/taskReadState");
+const {
+  createTaskReadState,
+} = require("../vendor/token-monitor/src/electron/notch/taskReadState");
 const demo = process.argv.includes("--demo");
 const smoke = process.argv.includes("--smoke");
+const isolated = demo || smoke || process.argv.includes("--preview");
 app.setName("Mac Notch");
+// Preview and smoke never touch a real profile or contend with its instance lock.
+if (isolated)
+  app.setPath(
+    "userData",
+    fs.mkdtempSync(
+      path.join(require("node:os").tmpdir(), "mac-notch-preview-"),
+    ),
+  );
 if (process.platform !== "darwin") {
   console.error("Mac Notch v0.1 supports macOS only.");
   app.exit(1);
@@ -45,7 +58,13 @@ let notch,
   lastRender = "",
   attentionTimer,
   scanTimer,
-  quotaTimer;
+  quotaTimer,
+  usageWorker,
+  fallbackTray,
+  expanded = false,
+  currentDisplay;
+let usage = { ...summarize([]), loading: true };
+const enabled = () => PROVIDERS.filter((p) => store.public().providers[p]);
 const state = new TaskState(),
   readState = createTaskReadState(),
   trays = new Map();
@@ -60,10 +79,13 @@ const bundles = {
 const file = (name) => path.join(__dirname, "../renderer", name);
 function payload() {
   return {
-    tasks: state.snapshot(),
+    tasks: state.snapshot().filter((t) => enabled().includes(t.provider)),
     quotas,
     settings: store.public(),
     geometry,
+    expanded,
+    usage,
+    version: app.getVersion(),
     demo,
   };
 }
@@ -79,56 +101,61 @@ function render() {
 }
 function position() {
   const native = readMacNotchScreens({ refresh: true });
+  const displays = screen.getAllDisplays();
+  const notched = native.screens?.find(
+    (s) =>
+      s.safeTop > 0 &&
+      displays.some((d) => d.internal && String(d.id) === String(s.displayId)),
+  );
   const display =
-    screen
-      .getAllDisplays()
-      .find((d) => String(d.id) === String(native.mainDisplayId)) ||
-    screen.getPrimaryDisplay();
+    displays.find(
+      (d) =>
+        String(d.id) === String(notched?.displayId || native.mainDisplayId),
+    ) || screen.getPrimaryDisplay();
+  currentDisplay = display;
   geometry = layout(
     display,
     native.screens?.find((s) => String(s.displayId) === String(display.id)),
   );
-  notch.setBounds({
-    x: geometry.x,
-    y: geometry.y,
-    width: geometry.width,
-    height: geometry.height,
-  });
-  if (panel?.isVisible()) positionPanel();
+  applyBounds();
   lastRender = "";
   render();
 }
-function positionPanel() {
-  const display = screen.getDisplayMatching(notch.getBounds());
-  const work = display.workArea;
-  panel.setBounds({
-    x: Math.max(
-      work.x,
-      Math.min(
-        geometry.x + geometry.width / 2 - 180,
-        work.x + work.width - 360,
-      ),
-    ),
-    y: geometry.y + geometry.height + 8,
-    width: 360,
-    height: 590,
+function applyBounds() {
+  if (!geometry) return;
+  const bounds = expanded ? expandedLayout(currentDisplay, geometry) : geometry;
+  notch.setBounds({
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
   });
 }
 function togglePanel() {
-  if (panel.isVisible()) {
-    panel.hide();
-    return;
-  }
-  positionPanel();
+  setExpanded(!expanded);
+}
+function setExpanded(value) {
+  expanded = value;
+  notch.setFocusable(expanded);
+  applyBounds();
+  render();
+  if (expanded) {
+    notch.show();
+    notch.focus();
+  } else if (!enabled().length) notch.hide();
+}
+function showSettings() {
+  setExpanded(false);
+  panel.center();
   panel.show();
+  panel.focus();
   panel.webContents.send("state", payload());
 }
 function openTool(provider) {
   if (!bundles[provider]) return;
   execFile("/usr/bin/open", ["-b", bundles[provider]], (error) => {
     if (error) {
-      positionPanel();
-      panel.show();
+      showSettings();
       panel.webContents.send(
         "notice",
         `未能打开 ${provider}，请先安装官方客户端`,
@@ -145,16 +172,68 @@ function menu(provider) {
       label: `打开 ${provider === "claude" ? "Claude" : "Codex"}`,
       click: () => openTool(provider),
     },
-    { label: "额度与设置", click: togglePanel },
+    { label: "用量与额度", click: togglePanel },
+    { label: "设置工具", click: showSettings },
     { label: "刷新额度", click: () => refreshQuotas() },
     { type: "separator" },
     { label: "退出 Mac Notch", click: () => app.quit() },
   ]);
 }
+function syncProviders() {
+  for (const tray of trays.values()) tray.destroy();
+  trays.clear();
+  fallbackTray?.destroy();
+  fallbackTray = null;
+  for (const provider of [...enabled()].reverse()) {
+    const image = nativeImage
+      .createFromPath(path.join(__dirname, "../../assets", `${provider}.png`))
+      .resize({ width: 20, height: 20 });
+    image.setTemplateImage(false);
+    const tray = new Tray(image);
+    trays.set(provider, tray);
+    tray.on("click", togglePanel);
+    tray.on("right-click", () => tray.popUpContextMenu(menu(provider)));
+    updateTray(provider);
+  }
+  for (const [key, row] of state.sessions)
+    if (!enabled().includes(row.provider)) state.sessions.delete(key);
+  if (!enabled().length) {
+    const image = nativeImage
+      .createFromPath(path.join(__dirname, "../../assets/codex.png"))
+      .resize({ width: 18, height: 18 });
+    image.setTemplateImage(true);
+    fallbackTray = new Tray(image);
+    fallbackTray.setToolTip("Mac Notch · 工具已关闭，点此设置");
+    fallbackTray.on("click", showSettings);
+    fallbackTray.on("right-click", () =>
+      fallbackTray.popUpContextMenu(
+        Menu.buildFromTemplate([
+          { label: "设置工具", click: showSettings },
+          { label: "退出 Mac Notch", click: () => app.quit() },
+        ]),
+      ),
+    );
+    setExpanded(false);
+    notch.hide();
+  } else if (!locked) notch.showInactive();
+  usageWorker?.postMessage({ enabled: enabled() });
+  // Do not display the previous provider's totals while the worker refilters.
+  usage = { ...summarize([]), loading: !(demo || smoke) };
+  if (demo || smoke) {
+    usage.days.forEach((d, i) => {
+      d.claude = enabled().includes("claude") ? (i + 1) * 234567 : 0;
+      d.codex = enabled().includes("codex") ? (7 - i) * 456789 : 0;
+      d.tokens = d.claude + d.codex;
+      d.cost = (d.tokens * 1.3) / 1e6;
+    });
+    usage.today = usage.days[6];
+  }
+}
 function updateTray(provider) {
   const tray = trays.get(provider),
     q = quotas[provider],
     value = remaining(q);
+  if (!tray) return;
   tray.setTitle(value === null ? "—" : `${value}%`, {
     fontType: "monospacedDigit",
   });
@@ -167,7 +246,7 @@ async function refreshQuotas() {
   quotalock = true;
   try {
     await Promise.all(
-      PROVIDERS.map(async (provider) => {
+      enabled().map(async (provider) => {
         if (demo || smoke)
           quotas[provider] = {
             provider,
@@ -210,7 +289,12 @@ async function scan() {
   if (busy || locked) return;
   busy = true;
   try {
-    if (!demo && !smoke) state.update(await readActivity());
+    if (!demo && !smoke)
+      state.update(
+        (await readActivity(Date.now(), enabled())).filter((r) =>
+          enabled().includes(r.provider),
+        ),
+      );
     render();
   } catch {
     /* Keep bounded previous observations; never log transcript data. */ state.update(
@@ -252,6 +336,10 @@ app.whenReady().then(async () => {
     height: 32,
     show: false,
     frame: false,
+    type: "panel",
+    enableLargerThanScreen: true,
+    roundedCorners: false,
+    acceptFirstMouse: true,
     transparent: true,
     resizable: false,
     movable: false,
@@ -264,34 +352,33 @@ app.whenReady().then(async () => {
   notch.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   protect(notch);
   panel = new BrowserWindow({
-    width: 360,
-    height: 590,
+    width: 400,
+    height: 560,
     show: false,
-    frame: false,
+    titleBarStyle: "hiddenInset",
+    title: "Mac Notch · 设置",
     resizable: false,
-    backgroundColor: "#11151c",
+    minimizable: false,
+    maximizable: false,
+    backgroundColor: "#141719",
     webPreferences,
   });
   protect(panel);
-  panel.on("blur", () => panel.hide());
+  notch.on("blur", () => {
+    if (expanded && !smoke) setExpanded(false);
+  });
+  notch.on("close", (e) => {
+    if (!app.isQuitting) {
+      e.preventDefault();
+      setExpanded(false);
+    }
+  });
   panel.on("close", (e) => {
     if (!app.isQuitting) {
       e.preventDefault();
       panel.hide();
     }
   });
-  // Create in reverse order because macOS inserts newer status items on the left.
-  for (const provider of [...PROVIDERS].reverse()) {
-    const image = nativeImage
-      .createFromPath(path.join(__dirname, "../../assets", `${provider}.png`))
-      .resize({ width: 20, height: 20 });
-    image.setTemplateImage(false);
-    const tray = new Tray(image);
-    trays.set(provider, tray);
-    tray.on("click", togglePanel);
-    tray.on("right-click", () => tray.popUpContextMenu(menu(provider)));
-    updateTray(provider);
-  }
   ipcMain.handle("state:get", (event) => (own(event) ? payload() : null));
   ipcMain.on("tool:open", (event, provider) => {
     if (own(event)) openTool(provider);
@@ -299,8 +386,21 @@ app.whenReady().then(async () => {
   ipcMain.on("panel:toggle", (event) => {
     if (own(event)) togglePanel();
   });
+  ipcMain.on("settings:open", (event) => {
+    if (own(event)) showSettings();
+  });
+  ipcMain.on("settings:close", (event) => {
+    if (own(event)) panel.hide();
+  });
+  ipcMain.on("panel:close", (event) => {
+    if (own(event)) setExpanded(false);
+  });
   ipcMain.on("quota:refresh", (event) => {
-    if (own(event)) refreshQuotas();
+    if (own(event)) {
+      for (const q of Object.values(quotas)) q.retryAfter = 0;
+      refreshQuotas();
+      usageWorker?.postMessage({ enabled: enabled() });
+    }
   });
   ipcMain.on("app:quit", (event) => {
     if (own(event)) app.quit();
@@ -308,7 +408,13 @@ app.whenReady().then(async () => {
   ipcMain.handle("settings:save", async (event, value) => {
     if (!own(event)) return { ok: false };
     try {
-      const result = store.update(value || {});
+      // Renderer may change only user-facing preferences. Legacy encrypted credentials
+      // and proxy settings remain compatible, but are no longer editable here.
+      const result = store.update({
+        providers: value?.providers,
+        startAtLogin: value?.startAtLogin,
+        setupComplete: value?.setupComplete,
+      });
       await transport.setProxy(
         result.proxy
           ? {
@@ -317,9 +423,10 @@ app.whenReady().then(async () => {
             }
           : { mode: "system" },
       );
-      if (app.isPackaged)
+      if (app.isPackaged && !isolated)
         app.setLoginItemSettings({ openAtLogin: result.startAtLogin });
       for (const q of Object.values(quotas)) q.retryAfter = 0;
+      syncProviders();
       lastRender = "";
       render();
       refreshQuotas();
@@ -347,7 +454,35 @@ app.whenReady().then(async () => {
     panel.loadFile(file("panel.html")),
   ]);
   position();
-  notch.showInactive();
+  syncProviders();
+  if (!demo && !smoke) {
+    usageWorker = new Worker(path.join(__dirname, "usage-worker.js"), {
+      workerData: { enabled: enabled() },
+    });
+    usageWorker.on("message", (value) => {
+      usage = { ...usage, ...value };
+      render();
+    });
+    usageWorker.on("error", () => {
+      usage = {
+        ...usage,
+        loading: false,
+        error: "本机用量读取失败，请重新打开 Mac Notch",
+      };
+      render();
+    });
+    if (!store.public().setupComplete) showSettings();
+  } else {
+    usage = { ...summarize([]), loading: false };
+    usage.days.forEach((d, i) => {
+      d.claude = (i + 1) * 234567;
+      d.codex = (7 - i) * 456789;
+      d.tokens = d.claude + d.codex;
+      d.cost = (d.tokens * 1.3) / 1e6;
+    });
+    usage.today = usage.days[6];
+    render();
+  }
   await scan();
   refreshQuotas();
   screen.on("display-metrics-changed", position);
@@ -361,7 +496,7 @@ app.whenReady().then(async () => {
   powerMonitor.on("unlock-screen", () => {
     locked = false;
     position();
-    notch.showInactive();
+    if (enabled().length) notch.showInactive();
     scan();
   });
   scanTimer = setInterval(scan, 2000);
@@ -372,151 +507,31 @@ app.whenReady().then(async () => {
       state.acknowledge(task.provider, task.id);
     render();
   }, 1000);
-  if (smoke) {
-    setTimeout(async () => {
-      const results = [];
-      const cases = [
-        ["idle", "idle"],
-        ["idle", "running"],
-        ["idle", "waiting"],
-        ["idle", "ended"],
-        ["running", "running"],
-        ["waiting", "running"],
-      ].map((states) => ({
-        name: states.join("-"),
-        tasks: PROVIDERS.map((provider, i) => ({
-          provider,
-          state: states[i],
-          count: 1,
-        })),
-      }));
-      cases.push(
-        {
-          name: "batch-running",
-          tasks: [
-            { provider: "claude", state: "idle" },
-            {
-              provider: "codex",
-              state: "running",
-              animating: true,
-              progress: { done: 1, total: 3 },
-            },
-          ],
-        },
-        {
-          name: "batch-waiting-running",
-          tasks: [
-            {
-              provider: "claude",
-              state: "waiting",
-              animating: true,
-              progress: { done: 1, total: 2 },
-            },
-            {
-              provider: "codex",
-              state: "running",
-              animating: true,
-              progress: { done: 2, total: 3 },
-            },
-          ],
-        },
-        {
-          name: "batch-large",
-          tasks: [
-            {
-              provider: "claude",
-              state: "running",
-              animating: true,
-              progress: { done: 12, total: 128 },
-            },
-            {
-              provider: "codex",
-              state: "running",
-              animating: true,
-              progress: { done: 99, total: 128 },
-            },
-          ],
-        },
-      );
-      for (const fixture of cases) {
-        const { tasks } = fixture,
-          states = tasks.map((task) => task.state);
-        notch.webContents.send("state", { ...payload(), tasks });
-        await new Promise((resolve) => setTimeout(resolve, 375));
-        const result = await notch.webContents.executeJavaScript(
-          `({count:document.querySelectorAll('button.tool').length,width:innerWidth,height:innerHeight,overflow:document.body.scrollWidth>innerWidth,progress:[...document.querySelectorAll('.progress')].map(n=>n.textContent),dots:document.querySelectorAll('.dots i').length,question:document.querySelectorAll('.question').length,check:document.querySelectorAll('.check').length,regions:[...document.querySelectorAll('.logo,.status,.progress')].filter(n=>getComputedStyle(n).display!=='none').map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};})})`,
-        );
-        result.states = states;
-        result.expectedDots =
-          tasks.filter((t) => t.state === "running" && !t.progress).length * 3;
-        result.expectedProgress = tasks
-          .filter((t) => t.state === "running" && t.progress)
-          .map((t) => `${t.progress.done}/${t.progress.total}`);
-        results.push(result);
-        if (process.env.MAC_NOTCH_SMOKE_OUTPUT) {
-          fs.mkdirSync(process.env.MAC_NOTCH_SMOKE_OUTPUT, { recursive: true });
-          fs.writeFileSync(
-            path.join(
-              process.env.MAC_NOTCH_SMOKE_OUTPUT,
-              fixture.name + ".png",
-            ),
-            (await notch.webContents.capturePage()).toPNG(),
-          );
-        }
-      }
-      const iconsLoaded =
-        [...trays.values()].length === 2 &&
-        PROVIDERS.every(
-          (provider) =>
-            !nativeImage
-              .createFromPath(
-                path.join(__dirname, "../../assets", `${provider}.png`),
-              )
-              .isEmpty(),
-        );
-      const panelCheck = await panel.webContents.executeJavaScript(
-        `({quotaCards:document.querySelectorAll('#quotas article').length,bodyWidth:document.body.scrollWidth,windowWidth:innerWidth})`,
-      );
-      if (process.env.MAC_NOTCH_SMOKE_OUTPUT)
-        fs.writeFileSync(
-          path.join(process.env.MAC_NOTCH_SMOKE_OUTPUT, "quotas.png"),
-          (await panel.webContents.capturePage()).toPNG(),
-        );
-      const ok =
-        iconsLoaded &&
-        panelCheck.quotaCards === 2 &&
-        panelCheck.bodyWidth <= panelCheck.windowWidth &&
-        results.every(
-          (r) =>
-            !r.overflow &&
-            r.width === results[0].width &&
-            r.height === results[0].height &&
-            (!geometry.hardware ||
-              r.regions.every(
-                (region) =>
-                  region.right <= (geometry.width - geometry.gap) / 2 + 1 ||
-                  region.left >= (geometry.width + geometry.gap) / 2 - 1,
-              )) &&
-            r.dots === r.expectedDots &&
-            JSON.stringify(r.progress) === JSON.stringify(r.expectedProgress) &&
-            r.question === r.states.filter((s) => s === "waiting").length &&
-            r.check === r.states.filter((s) => s === "ended").length,
-        );
-      console.log(
-        "SMOKE",
-        JSON.stringify({ ok, iconsLoaded, panelCheck, results }),
-      );
-      app.exit(ok ? 0 : 1);
-    }, 1000);
-  }
+  if (smoke)
+    setTimeout(
+      () =>
+        require("./smoke")({
+          notch,
+          panel,
+          trays,
+          geometry,
+          payload,
+          togglePanel,
+          store,
+          syncProviders,
+          app,
+        }),
+      1000,
+    );
 });
 app.on("before-quit", () => {
   app.isQuitting = true;
   clearInterval(scanTimer);
   clearInterval(quotaTimer);
   clearInterval(attentionTimer);
+  usageWorker?.terminate();
 });
 app.on("window-all-closed", () => {});
 app.on("second-instance", () => {
-  if (panel) togglePanel();
+  if (panel) showSettings();
 });

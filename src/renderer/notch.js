@@ -4,6 +4,12 @@ let last = "",
   clickTimer;
 const progressValues = new Map();
 function render(data) {
+  document.body.classList.toggle("expanded", data.expanded);
+  document.documentElement.style.setProperty(
+    "--bar-height",
+    `${data.geometry?.height || 32}px`,
+  );
+  document.querySelector("#dashboard").hidden = !data.expanded;
   const active = data.tasks.filter((t) => t.state !== "idle");
   const tasks = active.length ? active : data.tasks;
   const key = JSON.stringify(tasks);
@@ -82,3 +88,7 @@ function render(data) {
 }
 macNotch.onState(render);
 macNotch.get().then(render);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") macNotch.collapse();
+});

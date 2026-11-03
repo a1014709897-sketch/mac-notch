@@ -112,3 +112,17 @@ test("batch progress survives partial completion and acknowledgement, then reset
   assert.equal(s.snapshot()[1].progress, null);
   assert.equal(s.snapshot()[1].count, 1);
 });
+
+test("all displays attach at top; expanded surface stays below its own camera header", () => {
+  const { expandedLayout } = require("../src/main/layout");
+  const d = {
+    bounds: { x: -1920, y: -1080, width: 1920, height: 1080 },
+    workArea: { x: -1920, y: -1056, width: 1920, height: 1056 },
+  };
+  const g = layout(d, null),
+    e = expandedLayout(d, g);
+  assert.equal(g.y, -1080);
+  assert.equal(e.y, g.y);
+  assert.ok(e.height > g.height);
+  assert.ok(e.width <= d.bounds.width);
+});

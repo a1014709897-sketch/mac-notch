@@ -100,6 +100,23 @@ async function readClaudeToken() {
     return null;
   }
 }
+async function claudeOAuth(fetch) {
+  const token = await readClaudeToken();
+  const hint =
+    "如果没有获取 Claude 状态，请运行 Claude Code CLI（claude），完成订阅账号登录后刷新";
+  if (!token) throw new Error(hint);
+  try {
+    return await request(fetch, "https://api.anthropic.com/api/oauth/usage", {
+      authorization: `Bearer ${token}`,
+      "anthropic-beta": "oauth-2025-04-20",
+    });
+  } catch (error) {
+    if ([401, 403].includes(error.status))
+      error.message =
+        "Claude 登录已失效。请运行 Claude Code CLI（claude），重新登录订阅账号后刷新";
+    throw error;
+  }
+}
 async function readQuota(provider, fetch, cookie) {
   let data, windows;
   if (provider === "codex") {
@@ -129,32 +146,31 @@ async function readQuota(provider, fetch, cookie) {
     );
     windows = codexWindows(data);
   } else if (cookie) {
-    const headers = { cookie: `sessionKey=${cookie}` };
-    const orgs = await request(
-      fetch,
-      "https://claude.ai/api/organizations",
-      headers,
-    );
-    const org = Array.isArray(orgs)
-      ? orgs.find((o) => o.capabilities?.includes("chat")) || orgs[0]
-      : null;
-    if (!org?.uuid) throw new Error("未找到 Claude 订阅组织");
-    data = await request(
-      fetch,
-      `https://claude.ai/api/organizations/${encodeURIComponent(org.uuid)}/usage`,
-      headers,
-    );
-    windows = claudeWindows(data);
-  } else {
-    const token = await readClaudeToken();
-    if (!token)
-      throw new Error(
-        "未找到 Claude Code 登录；可在设置中填写 Claude 网页 sessionKey",
+    try {
+      const headers = { cookie: `sessionKey=${cookie}` };
+      const orgs = await request(
+        fetch,
+        "https://claude.ai/api/organizations",
+        headers,
       );
-    data = await request(fetch, "https://api.anthropic.com/api/oauth/usage", {
-      authorization: `Bearer ${token}`,
-      "anthropic-beta": "oauth-2025-04-20",
-    });
+      const org = Array.isArray(orgs)
+        ? orgs.find((o) => o.capabilities?.includes("chat")) || orgs[0]
+        : null;
+      if (!org?.uuid) throw new Error("未找到 Claude 订阅组织");
+      data = await request(
+        fetch,
+        `https://claude.ai/api/organizations/${encodeURIComponent(org.uuid)}/usage`,
+        headers,
+      );
+      windows = claudeWindows(data);
+    } catch (error) {
+      if (![401, 403].includes(error.status)) throw error;
+      // Old website credentials must not block a newly logged-in CLI account.
+      data = await claudeOAuth(fetch);
+      windows = claudeWindows(data);
+    }
+  } else {
+    data = await claudeOAuth(fetch);
     windows = claudeWindows(data);
   }
   if (!windows.length) throw new Error("服务返回了未识别的额度格式");

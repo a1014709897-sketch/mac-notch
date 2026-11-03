@@ -10,7 +10,39 @@
     <link rel="stylesheet" href="notch.css" />
   </head>
   <body>
-    <main id="notch" aria-label="AI 任务状态"></main>
+    <div id="surface">
+      <header id="notch" aria-label="AI 任务状态"></header>
+      <main id="dashboard" hidden>
+        <div class="dashboard-heading">
+          <span>用量与额度</span>
+          <div>
+            <button id="refresh" title="刷新本机用量与订阅额度">刷新</button
+            ><button id="settings" title="开启或关闭工具">设置</button
+            ><button id="collapse" aria-label="收起面板">⌃</button>
+          </div>
+        </div>
+        <section class="usage-summary" aria-label="本机 Token 用量">
+          <div class="today">
+            <span id="day-label">今日 Token</span><strong id="tokens">—</strong>
+            <div id="cost">正在读取本机用量…</div>
+            <div id="breakdown"></div>
+          </div>
+          <div class="trend">
+            <div class="trend-heading">
+              <span>近 7 天</span><span id="week-tokens"></span>
+            </div>
+            <div id="chart" aria-label="每日 Token 用量"></div>
+          </div>
+        </section>
+        <div class="quota-heading">订阅剩余额度<span id="updated"></span></div>
+        <section id="quotas" aria-label="订阅剩余额度"></section>
+        <p id="usage-note">
+          仅统计本机记录 · 费用为标准 API 价格估算，不是订阅账单
+        </p>
+        <p id="notice" role="status"></p>
+      </main>
+    </div>
     <script src="notch.js"></script>
+    <script src="dashboard.js"></script>
   </body>
 </html>

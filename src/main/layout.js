@@ -10,7 +10,7 @@ function layout(display, native) {
   const hardware = Boolean(
     native?.safeTop > 0 &&
       gap > 0 &&
-      frame?.size?.width === display.bounds.width,
+      Math.abs((frame?.size?.width || 0) - display.bounds.width) < 2,
   );
   const width = hardware ? Math.ceil(gap) + 136 : 280;
   const height = hardware ? native.safeTop : 32;
@@ -21,11 +21,28 @@ function layout(display, native) {
     : display.bounds.x + display.bounds.width / 2;
   return {
     x: Math.round(cx - width / 2),
-    y: display.bounds.y + (hardware ? 0 : 6),
+    y: display.bounds.y,
     width,
     height,
     gap: hardware ? gap : 0,
     hardware,
   };
 }
-module.exports = { layout };
+function expandedLayout(display, collapsed) {
+  const width = Math.min(680, display.bounds.width - 24);
+  return {
+    x: Math.round(
+      Math.max(
+        display.bounds.x,
+        Math.min(
+          collapsed.x + collapsed.width / 2 - width / 2,
+          display.bounds.x + display.bounds.width - width,
+        ),
+      ),
+    ),
+    y: display.bounds.y,
+    width,
+    height: Math.min(440 + collapsed.height, display.workArea.height),
+  };
+}
+module.exports = { layout, expandedLayout };

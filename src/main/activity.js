@@ -11,7 +11,9 @@ const {
 const {
   createDesktopCompletionReader,
 } = require("../vendor/token-monitor/src/electron/notch/desktopCompletion");
-const { nativeIdForFile } = require("../vendor/token-monitor/src/shared/providers/codex/sessionIdentity");
+const {
+  nativeIdForFile,
+} = require("../vendor/token-monitor/src/shared/providers/codex/sessionIdentity");
 const home = os.homedir();
 const claudeRoot = process.env.CLAUDE_CONFIG_DIR || path.join(home, ".claude");
 const codexRoot = process.env.CODEX_HOME || path.join(home, ".codex");
@@ -83,9 +85,9 @@ function codexFiles(now) {
     .slice(0, 256);
   return candidates;
 }
-async function readActivity(now = Date.now()) {
+async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
   const rows = [];
-  for (const file of codexFiles(now)) {
+  for (const file of enabled.includes("codex") ? codexFiles(now) : []) {
     try {
       const stat = fs.statSync(file);
       if (!waitingFiles.has(file) && now - stat.mtimeMs > 10 * 60000) continue;
@@ -107,6 +109,7 @@ async function readActivity(now = Date.now()) {
       });
     } catch {}
   }
+  if (!enabled.includes("claude")) return rows;
   const registry = path.join(claudeRoot, "sessions");
   const records = [];
   try {

@@ -74,14 +74,19 @@ class TaskState {
     });
   }
   completed() {
-    return [...this.sessions.values()].filter(row => row.state === "ended" && !row.acknowledged)
-      .map(({provider,id,completedAt}) => ({provider,id,completedAt}));
+    return [...this.sessions.values()]
+      .filter((row) => row.state === "ended" && !row.acknowledged)
+      .map(({ provider, id, completedAt }) => ({ provider, id, completedAt }));
   }
   acknowledge(provider, sessionId) {
     if (!sessionId) return;
     this.batches.acknowledge(provider, sessionId);
     for (const row of this.sessions.values())
-      if (row.provider === provider && row.id === sessionId && row.state === "ended")
+      if (
+        row.provider === provider &&
+        row.id === sessionId &&
+        row.state === "ended"
+      )
         row.acknowledged = true;
   }
 }

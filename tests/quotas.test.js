@@ -67,3 +67,32 @@ test("Claude website auth discovers organization; HTTP errors are surfaced witho
     /请求过多/,
   );
 });
+
+test("expired legacy Claude cookie falls back to CLI OAuth and expired OAuth gives CLI guidance", async (t) => {
+  const old = process.env.CLAUDE_CODE_OAUTH_TOKEN;
+  process.env.CLAUDE_CODE_OAUTH_TOKEN = "fixture-oauth";
+  t.after(() => {
+    if (old === undefined) delete process.env.CLAUDE_CODE_OAUTH_TOKEN;
+    else process.env.CLAUDE_CODE_OAUTH_TOKEN = old;
+  });
+  const targets = [];
+  const q = await readQuota(
+    "claude",
+    async (url, options) => {
+      targets.push(url);
+      if (url.includes("claude.ai")) return { ok: false, status: 401 };
+      assert.equal(options.headers.authorization, "Bearer fixture-oauth");
+      return {
+        ok: true,
+        text: async () => JSON.stringify({ five_hour: { utilization: 12 } }),
+      };
+    },
+    "sk-ant-expired",
+  );
+  assert.equal(q.windows[0].remaining, 88);
+  assert.equal(targets.length, 2);
+  await assert.rejects(
+    readQuota("claude", async () => ({ ok: false, status: 401 })),
+    /Claude Code CLI/,
+  );
+});

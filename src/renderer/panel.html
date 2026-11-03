@@ -6,59 +6,45 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'"
     />
-    <title>Mac Notch · 额度与设置</title>
+    <title>Mac Notch · 设置</title>
     <link rel="stylesheet" href="panel.css" />
   </head>
   <body>
-    <header>
-      <div><strong>Mac Notch</strong><small>Claude & Codex</small></div>
-      <button id="close" aria-label="收起">×</button>
-    </header>
+    <div class="titlebar"></div>
     <main>
-      <section id="quotas" aria-live="polite"></section>
-      <div class="actions">
-        <button id="refresh">刷新额度</button
-        ><span>显示最紧张窗口的剩余百分比</span>
-      </div>
-      <details>
-        <summary>设置与登录</summary>
-        <form id="settings">
-          <label class="checkline"
-            ><input id="login" type="checkbox" />登录时启动</label
-          ><label
-            >网络代理<input
-              id="proxy"
-              placeholder="留空使用系统代理"
-              autocomplete="off" /></label
-          ><small>只影响额度请求；不会改变 Claude / Codex 的网络。</small
-          ><label
-            >Claude 网页 sessionKey<input
-              id="cookie"
-              type="password"
-              placeholder="可选；已登录 Claude Code 可留空"
-              autocomplete="off" /></label
-          ><small id="cookieState"></small>
-          <p>
-            Codex 使用 ~/.codex/auth.json；Claude 优先使用 Claude Code
-            登录。网页登录凭据只在本机加密保存。
-          </p>
-          <div class="actions">
-            <button type="submit">保存</button
-            ><button type="button" id="clear">清除网页凭据</button>
-          </div>
-        </form>
-      </details>
-      <div id="demo" hidden>
-        <p>演示数据 · 不读取本地会话或登录</p>
-        <button data-state="idle">空闲</button
-        ><button data-state="running">运行</button
-        ><button data-state="waiting">协助</button
-        ><button data-state="ended">完成</button>
-      </div>
-      <p id="notice" role="status"></p>
+      <h1>选择你的 AI 工具</h1>
+      <p class="intro">只开启你使用的工具，随时可以调整。</p>
+      <form id="settings">
+        <label class="provider"
+          ><img src="../../assets/claude.svg" alt="" /><span
+            ><b>Claude Code</b><small>任务状态与订阅额度</small></span
+          ><input
+            id="claude"
+            type="checkbox"
+            role="switch"
+            aria-label="开启 Claude Code" /><i></i
+        ></label>
+        <label class="provider"
+          ><img src="../../assets/codex.svg" alt="" /><span
+            ><b>Codex</b><small>任务状态与订阅额度</small></span
+          ><input
+            id="codex"
+            type="checkbox"
+            role="switch"
+            aria-label="开启 Codex" /><i></i
+        ></label>
+        <label class="login"
+          ><input id="login" type="checkbox" /> 登录时启动</label
+        >
+        <p class="hint">
+          单击刘海打开工具，双击查看用量与额度。<br />没有获取 Claude 状态？运行
+          Claude Code CLI（<code>claude</code>），完成订阅账号登录后刷新。
+        </p>
+        <p id="notice" role="status"></p>
+        <button type="submit" id="save">开始使用</button>
+      </form>
       <footer>
-        <span>v0.1.0 · 本机状态，不上传会话</span
-        ><button id="quit">退出</button>
+        <span id="version"></span><button id="quit">退出 Mac Notch</button>
       </footer>
     </main>
     <script src="panel.js"></script>

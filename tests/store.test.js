@@ -19,3 +19,27 @@ test("settings DTO omits secrets and refuses unavailable encryption or credentia
   );
   assert.equal(s.public().startAtLogin, false);
 });
+
+test("provider preferences persist independently and migrate existing settings", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mac-notch-providers-"));
+  try {
+    fs.writeFileSync(
+      path.join(dir, "settings.json"),
+      JSON.stringify({ startAtLogin: true, proxy: "http://127.0.0.1:7890" }),
+    );
+    const store = createStore(dir, {});
+    assert.deepEqual(store.public().providers, { claude: true, codex: true });
+    assert.equal(store.public().setupComplete, false);
+    store.update({ providers: { claude: false }, setupComplete: true });
+    assert.deepEqual(createStore(dir, {}).public().providers, {
+      claude: false,
+      codex: true,
+    });
+    assert.equal(store.public().proxy, "http://127.0.0.1:7890");
+    assert.equal(store.public().setupComplete, true);
+    store.update({ providers: { codex: false } });
+    assert.deepEqual(store.public().providers, { claude: false, codex: false });
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

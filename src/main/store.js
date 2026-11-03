@@ -3,10 +3,20 @@ const fs = require("node:fs");
 const path = require("node:path");
 function createStore(directory, safeStorage) {
   const file = path.join(directory, "settings.json");
-  let data = { startAtLogin: false, proxy: "", claudeCookie: null };
+  let data = {
+    startAtLogin: false,
+    proxy: "",
+    claudeCookie: null,
+    providers: { claude: true, codex: true },
+    setupComplete: false,
+  };
   try {
     data = { ...data, ...JSON.parse(fs.readFileSync(file, "utf8")) };
   } catch {}
+  data.providers = {
+    claude: data.providers?.claude !== false,
+    codex: data.providers?.codex !== false,
+  };
   function save(next) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     const tmp = file + ".tmp";
@@ -16,6 +26,8 @@ function createStore(directory, safeStorage) {
   return {
     public: () => ({
       startAtLogin: data.startAtLogin,
+      providers: { ...data.providers },
+      setupComplete: data.setupComplete === true,
       proxy: data.proxy,
       hasClaudeCookie: Boolean(data.claudeCookie),
     }),
@@ -29,7 +41,11 @@ function createStore(directory, safeStorage) {
       }
     },
     update(value) {
-      const next = { ...data };
+      const next = { ...data, providers: { ...data.providers } };
+      for (const provider of ["claude", "codex"])
+        if (typeof value.providers?.[provider] === "boolean")
+          next.providers[provider] = value.providers[provider];
+      if (value.setupComplete === true) next.setupComplete = true;
       if (typeof value.startAtLogin === "boolean")
         next.startAtLogin = value.startAtLogin;
       if (typeof value.proxy === "string") {

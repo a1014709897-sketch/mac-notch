@@ -1,6 +1,6 @@
 # Mac Notch
 
-A small macOS companion for **Claude and Codex**: animated task status at the notch, subscription quotas in the menu bar. 本项目第一期仅支持 macOS。
+在 Mac 顶部查看 **Claude Code 和 Codex** 的任务状态、订阅额度与本机 Token 用量。仅支持 macOS。
 
 **[产品官网与交互演示](https://a1014709897-sketch.github.io/mac-notch/)** · **[下载](https://github.com/a1014709897-sketch/mac-notch/releases/latest)**
 
@@ -12,18 +12,19 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 |---|---|---|
 | ![空闲](docs/screenshots/idle-idle.png) | ![协助](docs/screenshots/idle-waiting.png) | ![完成](docs/screenshots/idle-ended.png) |
 
-[双工具运行](docs/screenshots/running-running.png) · [额度与设置面板](docs/screenshots/quotas.png)
+[双工具运行](docs/screenshots/running-running.png) · [刘海展开面板](docs/screenshots/dashboard.png) · [工具设置](docs/screenshots/setup.png)
 
 ## 功能
 
 - Claude 橙色小怪兽、Codex 蓝紫图标；运行时动画与三点，等待协助时轻量 `?`，完成时细线 `✓`。
 - 空闲时两位小伙伴常驻，Claude 左、Codex 右；没有状态文案、跑马灯或额外一行。
-- 每块屏幕上的收起宽度固定，状态变化不撑宽。真实摄像头区域留空；外接无刘海屏幕使用固定宽度胶囊。
-- 单工具：左侧图标、右侧状态，整条可以点击。双工具：各自点击跳转。单击打开对应官方客户端，双击打开额度与设置。悬停不展开。
+- 每块屏幕上的收起宽度固定，状态变化不撑宽。真实摄像头区域留空；无刘海屏幕也贴住屏幕顶边。
+- 单工具：左侧图标、右侧状态，整条可以点击。双工具：各自点击跳转。单击打开对应官方客户端，双击由刘海自身展开用量与额度面板。悬停不展开。
 - 同工具多任务显示已完成/总数（如 `1/3`），数字变化有轻微过渡；协助问号优先，全部完成后显示勾。
 - 完成提醒按具体会话的已读信号清除，查看一个会话只扣除它；仅打开客户端不会清空其他会话。运行和待协助不会因点击而当作完成。
 - 两个彩色菜单栏图标分别显示 Claude / Codex 剩余额度。百分比取已知窗口中最小剩余值；不把本地 token 消耗当成订阅额度。
-- 设置中支持系统代理或本应用专用代理、Claude 网页凭据加密保存、登录启动。
+- 首次打开显示工具设置：Claude Code / Codex 独立开关、登录启动。关闭工具后，停止它的状态和额度读取，并隐藏对应图标；全部关闭仍保留设置入口。
+- 展开面板显示今日 Token、标准 API 费用估算和近 7 天柱状趋势；点击某天查看当日数据。数字仅来自本机记录，不是账号全部设备的账单。
 
 ## 下载
 
@@ -35,7 +36,7 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 curl -fsSL https://a1014709897-sketch.github.io/mac-notch/install.sh | bash
 ```
 
-[安装脚本](site/install.sh) 固定下载 v0.1.0，检查系统、SHA-256、应用身份和签名完整性后安装到 `~/Applications`。无需 sudo；不会覆盖已有应用，也不会关闭 macOS 安全保护。安装后从用户 Applications 文件夹打开。仅验证不安装可在命令末尾使用 `bash -s -- --verify-only`。网站源码、部署和域名配置见 [网站维护说明](docs/WEBSITE.md)。
+[安装脚本](site/install.sh) 固定下载当前已验证的版本，检查系统、SHA-256、应用身份和签名完整性后安装到 `~/Applications`。无需 sudo；不会覆盖已有应用，也不会关闭 macOS 安全保护。安装后从用户 Applications 文件夹打开。仅验证不安装可在命令末尾使用 `bash -s -- --verify-only`。网站源码、部署和域名配置见 [网站维护说明](docs/WEBSITE.md)。
 
 ## 快速开始
 
@@ -50,8 +51,8 @@ npm start
 ```
 
 ```sh
-npm run smoke          # 九种窗口状态与图标资源检查
-npm run demo           # 使用模拟额度，可切换空闲/运行/协助/完成；不读取真实登录
+npm run smoke          # 九种状态、实际顶部坐标、展开面板与工具开关检查
+npm run demo           # 模拟额度和趋势；独立临时配置，不读取真实登录
 npm run pack           # dist/mac-arm64/Mac Notch.app
 npm run dist           # arm64 DMG + ZIP
 npm run dist:x64       # Intel DMG + ZIP
@@ -63,11 +64,19 @@ npm run release:local  # 完整构建、源码归档与 SHA-256 校验清单
 
 **Codex**：先在官方客户端或 CLI 登录订阅账号。应用只读 `$CODEX_HOME/auth.json`（默认 `~/.codex/auth.json`）的访问令牌，调用 ChatGPT 额度接口。API Key 登录没有订阅额度，显示明确提示。
 
-**Claude**：优先读取 `CLAUDE_CODE_OAUTH_TOKEN`、Claude Code 凭据文件或 macOS Keychain 的 `Claude Code-credentials`。如果仅使用 Claude 桌面版、没有 Claude Code 登录，可在设置中自行填写 Claude 网页的 sessionKey。仅桌面版登录不保证存在可用于额度查询的凭据。
+**Claude**：如果没有获取 Claude 状态，请运行 Claude Code CLI（`claude`），完成订阅账号登录后刷新。应用读取 `CLAUDE_CODE_OAUTH_TOKEN`、Claude Code 凭据文件或 macOS Keychain 的 `Claude Code-credentials`。仅登录 Claude 桌面版不保证存在额度查询凭据；任务状态与订阅额度是不同的数据来源。
 
-凭据不发送给 Mac Notch 的服务器（本项目没有服务器），只用于对应厂商额度接口。手工输入的 Claude sessionKey 使用 Electron safeStorage 加密。Keychain 读取可能触发 macOS 权限提示。应用不替用户刷新/改写 Claude 或 Codex 的登录令牌，也不执行推理任务来探测余额。
+不再要求用户手动填写 sessionKey 或代理地址。默认沿用系统代理；旧版本已保存的应用代理和加密凭据继续兼容。凭据仅发送到对应厂商接口，界面不接收令牌。Keychain 读取可能触发 macOS 权限提示；应用不会改写或自动续期厂商令牌。
 
 默认两分钟刷新一次额度；429 至少退避五分钟。失败会显示错误和缓存标记；未知额度显示 `—`，不伪装成 0% 或 100%。代理只影响本应用的额度请求。
+
+## 本机用量与费用估算
+
+后台线程只读 Claude Code `projects` / `transcripts` 与 Codex `sessions` / `archived_sessions` 的 JSONL 用量字段。每 30 秒增量扫描，可手动刷新。按照本机时区显示近 7 个日历日；没有本机记录的网页、远程任务和其他设备用量不会出现。
+
+Codex 新版按 response ID 去重，并排除镜像累计事件；旧版采用累计差值。Claude 同一个消息的重复片段只计一次。缓存输入单列计价，推理输出不重复相加。已删除或缺失的日志无法恢复。未识别模型显示“未计价”，不冒充免费。
+
+价格使用 2026-11-02 的标准 API 公开费率，见 [价格表来源与口径](docs/USAGE.md)。套餐优惠、长上下文阶梯、加速档、工具调用等费用可能不同，**估算金额不是官方账单或订阅实付**。
 
 ## 状态来源与限制
 
