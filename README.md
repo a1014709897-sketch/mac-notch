@@ -27,7 +27,7 @@ A small macOS companion for **Claude and Codex**: animated task status at the no
 
 ## 下载
 
-[GitHub Releases](https://github.com/wjiejie2/mac-notch/releases) 提供 Apple Silicon DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。首发使用 ad-hoc 签名，尚未 Apple Developer ID 公证。
+[GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。首发使用 ad-hoc 签名，尚未 Apple Developer ID 公证。
 
 ## 快速开始
 

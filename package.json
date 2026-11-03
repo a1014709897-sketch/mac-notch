@@ -31,7 +31,7 @@
     "electron-builder": "26.18.1"
   },
   "build": {
-    "appId": "io.github.wjiejie2.macnotch",
+    "appId": "io.github.a1014709897-sketch.macnotch",
     "productName": "Mac Notch",
     "directories": {
       "output": "dist"
@@ -65,10 +65,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/wjiejie2/mac-notch.git"
+    "url": "https://github.com/a1014709897-sketch/mac-notch.git"
   },
-  "homepage": "https://github.com/wjiejie2/mac-notch#readme",
+  "homepage": "https://github.com/a1014709897-sketch/mac-notch#readme",
   "bugs": {
-    "url": "https://github.com/wjiejie2/mac-notch/issues"
+    "url": "https://github.com/a1014709897-sketch/mac-notch/issues"
   }
 }

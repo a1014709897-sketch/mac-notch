@@ -11,7 +11,7 @@
 ## 构建与运行
 
 - Electron 45.1.0 / electron-builder 26.18.1 / macOS arm64。
-- 完成独立 `.app`、DMG、应用 ZIP 和源码 ZIP 构建。包使用 bundle ID `io.github.wjiejie2.macnotch`。
+- 完成独立 `.app`、DMG、应用 ZIP 和源码 ZIP 构建。包使用 bundle ID `io.github.a1014709897-sketch.macnotch`。
 - `codesign --verify --deep --strict` 通过，签名类型为 ad-hoc。未使用 Developer ID，也未公证；不代表 Gatekeeper 公网分发验收通过。
 - 打包后的应用运行 `--smoke`，检查九种状态组合（空闲、单工具运行/协助/完成、双工具运行、协助与运行并存、多任务进度及大计数），均通过。
 - 本机真实屏幕几何下尺寸固定 321 × 32 pt，中央硬件摄像头区域 185 pt；检测图标和状态不侵入硬件遮挡区。单任务每个工具 3 个点，多任务计数及协助和完成标记数量正确。

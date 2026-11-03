@@ -20,7 +20,7 @@ npm run checksums
 
 ## 发布身份
 
-产品名 Mac Notch，仓库 `wjiejie2/mac-notch`，bundle ID `io.github.wjiejie2.macnotch`。首发后保持此身份，避免用户的安全存储/登录启动身份变化。没有绑定 Token Monitor 的更新源。
+产品名 Mac Notch，仓库 `a1014709897-sketch/mac-notch`，bundle ID `io.github.a1014709897-sketch.macnotch`。首发后保持此身份，避免用户的安全存储/登录启动身份变化。没有绑定 Token Monitor 的更新源。
 
 当前固定使用 `build.mac.identity="-"` 生成 ad-hoc 签名产物，关闭 hardened runtime 和自动公证；本地 `codesign --verify --deep --strict` 已通过。这种签名没有 Apple Developer ID 身份，也没有公证。Gatekeeper 对从互联网下载的未公证应用可能阻止启动。这不是面向普通用户的最终分发签名状态，不应宣传“已公证”。不提供关闭系统安全检查的安装步骤。
 
@@ -28,7 +28,7 @@ npm run checksums
 
 ## GitHub
 
-发布目标为 https://github.com/wjiejie2/mac-notch 。CI 在 macOS 构建两个架构并保存 artifacts，不自动发布 Release。
+发布目标为 https://github.com/a1014709897-sketch/mac-notch 。CI 在 macOS 构建两个架构并保存 artifacts，不自动发布 Release。
 
 ```sh
 npm run release:local
