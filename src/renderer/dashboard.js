@@ -17,6 +17,8 @@
   }
   function render(data) {
     latest = data;
+    // Preserve the visible content during exit; rebuild on the next expansion.
+    if (!data.expanded) return;
     const u = data.usage,
       enabled = Object.keys(data.settings.providers).filter(
         (p) => data.settings.providers[p],

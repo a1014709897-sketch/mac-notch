@@ -12,11 +12,15 @@ function paintCountdown() {
   countdown.style.transform = `scaleX(${Math.min(1, Math.max(0, remaining / (notificationData.duration || 5000)))})`;
   if (notificationData.expiresAt !== null) countdownFrame = requestAnimationFrame(paintCountdown);
 }
-function renderNotification(value) {
+function renderNotification(value, closing = false) {
   const changed = notificationData?.key !== value?.key;
   notificationData = value;
-  document.body.classList.toggle("notifying", Boolean(value));
-  notificationElement.hidden = !value;
+  // During a fold the renderer owns the header's class change after measuring;
+  // repeated state messages must not switch it back to the card layout.
+  if (!closing) document.body.classList.toggle("notifying", Boolean(value));
+  document.body.classList.toggle("closing-notification", closing);
+  notificationElement.hidden = !value && !closing;
+  if (!value && closing) { cancelAnimationFrame(countdownFrame); return; }
   notificationElement.dataset.kind = value?.kind || "ended";
   const badge = document.querySelector("#notification-status");
   badge.className = !value ? "" : value.kind === "waiting" ? "question" : "check";

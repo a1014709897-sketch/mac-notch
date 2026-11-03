@@ -1,6 +1,6 @@
 "use strict";
-// Idle quota shares the existing wings; toggling it must not resize the notch. Never put text under the hardware camera.
-function layout(display, native, idleQuota = false) {
+// Hardware geometry is independent of content. All coordinates are logical pixels.
+function layout(display, native) {
   const left = native?.left,
     right = native?.right,
     frame = native?.frame;
@@ -26,6 +26,7 @@ function layout(display, native, idleQuota = false) {
     height,
     gap: hardware ? gap : 0,
     hardware,
+    centerX: cx,
   };
 }
 function expandedLayout(display, collapsed) {
@@ -35,7 +36,7 @@ function expandedLayout(display, collapsed) {
       Math.max(
         display.bounds.x,
         Math.min(
-          collapsed.x + collapsed.width / 2 - width / 2,
+          (collapsed.centerX ?? collapsed.x + collapsed.width / 2) - width / 2,
           display.bounds.x + display.bounds.width - width,
         ),
       ),
@@ -46,22 +47,44 @@ function expandedLayout(display, collapsed) {
   };
 }
 function notificationLayout(display, collapsed) {
-  const width = Math.min(Math.max(360, collapsed.width), display.bounds.width - 24);
-  return { x: Math.round(Math.max(display.bounds.x, Math.min(collapsed.x + collapsed.width / 2 - width / 2,
+  const centerX = collapsed.centerX ?? collapsed.x + collapsed.width / 2;
+  // A centered card must contain both asymmetric header wings.
+  const headerWidth = 2 * Math.max(centerX - collapsed.x, collapsed.x + collapsed.width - centerX);
+  const width = Math.min(Math.ceil(Math.max(360, headerWidth)), display.bounds.width - 24);
+  return { x: Math.round(Math.max(display.bounds.x, Math.min((collapsed.centerX ?? collapsed.x + collapsed.width / 2) - width / 2,
     display.bounds.x + display.bounds.width - width))), y: collapsed.y, width, height: collapsed.height + 82 };
 }
 module.exports = { layout, expandedLayout, notificationLayout };
 
-// Reserve the complete count at a fixed 15px, without crossing the camera gap.
-function taskLayout(base, tasks) {
-  let wing = (base.width - base.gap) / 2;
-  for (const task of tasks) {
-    if (task.state !== "running" || !task.progress) continue;
-    const count = `${task.progress.done}/${task.progress.total}`;
-    // 24 outer + 4 button padding + 22 icon + 4 gap + glyph width + breathing room.
-    wing = Math.max(wing, 62 + count.length * 10);
-  }
-  const width = Math.ceil(base.gap + wing * 2);
-  return {...base, width, x:Math.round(base.x + (base.width-width)/2)};
+// Renderer measures untransformed layout boxes, so animation never resizes the window.
+// Outer padding clears the concave silhouette; inner padding clears the camera.
+const OUTER = 28, INNER = 6, TOOL_GAP = 12;
+function contentLayout(base, { left, right, single }) {
+  const centerX = base.centerX ?? base.x + base.width / 2;
+  const spacer = base.hardware ? Math.ceil(base.gap) + INNER * 2 : (single ? (right ? 4 : 0) : TOOL_GAP);
+  const width = OUTER * 2 + left + spacer + right;
+  const x = base.hardware
+    ? Math.round(centerX - base.gap / 2 - INNER - left - OUTER)
+    : Math.round(centerX - width / 2);
+  return { ...base, x, width, centerX, left, right, single, spacer, outer: OUTER,
+    cameraLeft: base.hardware ? centerX - base.gap / 2 - x : null };
 }
-module.exports.taskLayout = taskLayout;
+function contentKey(data) {
+  return JSON.stringify([data.tasks, data.settings?.idleQuota === true, data.remainingQuota]);
+}
+module.exports.contentLayout = contentLayout;
+module.exports.contentKey = contentKey;
+
+// Keep the last expanded native canvas after folding. Only the visible contour
+// shrinks, so AppKit and Chromium never have to rebase the final frame together.
+function compactHostBounds(host, content) {
+  if (!host || host.y !== content.y) return content;
+  const x = Math.min(host.x, content.x);
+  return {x, y: content.y, width: Math.max(host.x+host.width, content.x+content.width)-x,
+    height: Math.max(host.height, content.height)};
+}
+function containsPoint(rect, point) {
+  return point.x >= rect.x && point.x < rect.x+rect.width && point.y >= rect.y && point.y < rect.y+rect.height;
+}
+module.exports.compactHostBounds = compactHostBounds;
+module.exports.containsPoint = containsPoint;

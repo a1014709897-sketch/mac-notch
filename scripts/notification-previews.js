@@ -1,16 +1,24 @@
 "use strict";
 // Render demonstration images from the production notification DOM/CSS.
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const { contentLayout } = require('../src/main/layout');
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os');
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mac-notch-notification-images-'));
 app.setPath('userData', path.join(directory, 'profile'));
 
 const preload = path.join(directory, 'preload.js');
-fs.writeFileSync(preload, `const {contextBridge}=require('electron');contextBridge.exposeInMainWorld('macNotch',{get:()=>new Promise(()=>{}),onState(){},notification(){},gesture(){}});`);
+fs.writeFileSync(preload, `const {contextBridge,ipcRenderer}=require('electron');contextBridge.exposeInMainWorld('macNotch',{get:()=>new Promise(()=>{}),onState(){},pointer(){},notification(){},gesture(){},measure:value=>ipcRenderer.invoke("notch:measure",value)});`);
 app.whenReady().then(async () => {
-  const win = new BrowserWindow({ show: true, width: 360, height: 114, frame: false, transparent: true,
+  const win = new BrowserWindow({ show: false, width: 360, height: 114, frame: false, transparent: true,
     webPreferences: { preload, contextIsolation: true, sandbox: true } });
+  ipcMain.handle('notch:measure', (_event, measurement) => {
+    const frame=win.getBounds();
+    const geometry=contentLayout({x:frame.x,y:frame.y,width:frame.width,height:32,gap:0,hardware:false,centerX:frame.x+frame.width/2},measurement);
+    return {geometry,frame};
+  });
+  win.webContents.setBackgroundThrottling(false);
   await win.loadFile(path.resolve('src/renderer/notch.html'));
+  await new Promise(resolve => setTimeout(resolve, 400));
   await win.webContents.insertCSS('* { animation: none !important; }');
   for (const kind of ['waiting', 'ended']) {
     const notification = { key: 'preview', provider: 'codex', kind, duration: kind === 'waiting' ? 8000 : 5000,

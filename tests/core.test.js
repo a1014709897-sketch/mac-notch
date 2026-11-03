@@ -129,13 +129,33 @@ test("all displays attach at top; expanded surface stays below its own camera he
   assert.ok(e.width <= d.bounds.width);
 });
 
-test('fixed-size progress reserves more wing space without moving the camera center', () => {
-  const {taskLayout}=require('../src/main/layout');
-  const base={x:100,y:0,width:341,height:32,gap:185,hardware:true};
-  const compact=taskLayout(base,[{state:'running',progress:{done:0,total:2}}]);
-  const large=taskLayout(base,[{state:'running',progress:{done:100,total:128}}]);
-  assert.ok(large.width > compact.width);
-  assert.equal(large.x+large.width/2,base.x+base.width/2);
-  assert.equal(large.height,base.height);
-  assert.deepEqual(taskLayout(base,[{state:'idle'}]),base);
+test('content grows independently on either wing while the camera stays anchored', () => {
+  const {contentLayout, expandedLayout, notificationLayout}=require('../src/main/layout');
+  const base={x:100,y:0,width:341,height:32,gap:185,hardware:true,centerX:270.5};
+  const compact=contentLayout(base,{left:22,right:20,single:true});
+  const rightGrows=contentLayout(base,{left:22,right:38,single:true});
+  const leftGrows=contentLayout(base,{left:55,right:20,single:false});
+  assert.equal(rightGrows.width-compact.width,18);
+  assert.equal(rightGrows.x,compact.x);
+  assert.equal(leftGrows.width-compact.width,33);
+  assert.equal(leftGrows.x,compact.x-33);
+  for(const g of [compact,rightGrows,leftGrows]) {
+    assert.equal(g.x+g.cameraLeft+g.gap/2,base.centerX);
+    assert.ok(g.outer+g.left<=g.cameraLeft-5);
+    assert.ok(g.outer+g.left+g.spacer>=g.cameraLeft+g.gap+5);
+    assert.equal(g.width-(g.outer+g.left+g.spacer+g.right),g.outer);
+  }
+  const display={bounds:{x:0,y:0,width:1000},workArea:{height:800}};
+  assert.equal(expandedLayout(display,compact).x,expandedLayout(display,rightGrows).x);
+  assert.equal(notificationLayout(display,compact).x,notificationLayout(display,rightGrows).x);
+});
+test('no-camera layout has only content, shared margins and actual inter-item gaps',()=>{
+  const {contentLayout}=require('../src/main/layout');
+  const base=layout({bounds:{x:-1920,y:0,width:1920}},null);
+  const off=contentLayout(base,{left:22,right:0,single:true});
+  const one=contentLayout(base,{left:22,right:19,single:true});
+  const two=contentLayout(base,{left:22,right:27,single:true});
+  const three=contentLayout(base,{left:22,right:35,single:true});
+  assert.deepEqual([off.width,one.width,two.width,three.width],[78,101,109,117]);
+  for(const g of [off,one,two,three]) assert.ok(Math.abs(g.x+g.width/2-base.centerX)<=0.5);
 });

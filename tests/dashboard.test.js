@@ -21,7 +21,7 @@ function harness() {
 function fixture(period, dates) {
   const bins=dates.map((date,i)=>({date,tokens:(i+1)*10,cost:0,unpricedTokens:0,claude:(i+1)*10,codex:0}));
   const total={date:null,tokens:bins.reduce((sum,b)=>sum+b.tokens,0),cost:0,unpricedTokens:0,claude:0,codex:0};
-  return {settings:{providers:{claude:false,codex:false}},quotas:{},usage:{days:bins,today:bins.at(-1),updatedAt:0,periods:{[period]:{bins,total}}}};
+  return {expanded:true,settings:{providers:{claude:false,codex:false}},quotas:{},usage:{days:bins,today:bins.at(-1),updatedAt:0,periods:{[period]:{bins,total}}}};
 }
 for(const [period,oldDates,newDates,label] of [
   ["week",["2026-11-01"],["2026-11-02","2026-11-03"],"本周"],
@@ -37,4 +37,14 @@ for(const [period,oldDates,newDates,label] of [
   assert.equal(h.get("day-label").textContent,label+" Token");
   assert.equal(h.get("tokens").textContent,String(after.usage.periods[period].total.tokens));
   assert.ok(h.get("chart").children.every(b=>b.attributes["aria-pressed"]==="false"));
+});
+
+test("closing dashboard preserves its content while fresh usage arrives",()=>{
+  const h=harness(), initial=fixture("day",["2026-11-03"]);
+  h.render(initial); const bars=h.get("chart").children;
+  const next=fixture("day",["2026-11-03","2026-11-04"]);
+  h.render({...next,expanded:false});
+  assert.equal(h.get("chart").children,bars);
+  h.render(next);
+  assert.equal(h.get("chart").children.length,2);
 });

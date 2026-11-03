@@ -20,6 +20,98 @@ module.exports = async function smoke({
 }) {
   try {
     notch.webContents.setBackgroundThrottling(false);
+    const compact = () => !payload().expanded && !payload().notification && !payload().collapse;
+    async function checkDashboardMotion() {
+      const checks={};
+      notifications.clear();syncNotification(null);await wait();
+      for(const action of ['button','escape']) {
+        togglePanel();await wait();
+        const before=notch.getBounds();let held;
+        const nativeEvents=[];const moved=()=>nativeEvents.push(notch.getBounds());
+        notch.on("move",moved);notch.on("resize",moved);
+        const timer=setTimeout(()=>{held=notch.getBounds();},100);
+        // Real usage/quota workers may publish while the panel is folding.
+        const pulse=action==='escape' ? setInterval(()=>{
+          const data=payload();
+          notch.webContents.send('state',{...data,quotas:{...data.quotas,claude:{...data.quotas.claude,updatedAt:Date.now()}}});
+        },60) : null;
+        const frames=await notch.webContents.executeJavaScript(`new Promise(resolve=>{
+          const frames=[],start=performance.now();
+          function sample(){frames.push({time:performance.now()-start,
+            closing:document.body.classList.contains('closing-dashboard'),
+            clip:getComputedStyle(document.querySelector('#surface')).clipPath,
+            header:getComputedStyle(document.querySelector('#notch')).visibility,
+            headerWidth:document.querySelector('#notch').getBoundingClientRect().width,
+            screenX, viewportWidth:innerWidth, headerX:screenX+document.querySelector('#notch').getBoundingClientRect().left});
+            // IPC and Rosetta startup can delay the beginning of the 320 ms fold.
+            // Observe the actual completion, with a bounded deadline, rather
+            // than treating 380 ms after the click as the completion signal.
+            const elapsed=performance.now()-start;
+            if(elapsed<1500 && (elapsed<380 || document.body.classList.contains('closing-dashboard')))requestAnimationFrame(sample);else resolve(frames);}
+          sample();${action==='button' ? "document.querySelector('#collapse').click()" : "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))"};
+        })`);
+        clearTimeout(timer);
+        clearInterval(pulse);
+        notch.removeListener("move",moved);notch.removeListener("resize",moved);
+        checks[action]=nativeEvents.length===0 && JSON.stringify(notch.getBounds())===JSON.stringify(before) && held?.height===before.height && before.height>geometry.height &&
+          frames.every(f=>f.header!=='hidden' && Math.abs(f.headerWidth-geometry.width)<1 && Math.abs(f.headerX-geometry.x)<1) && new Set(frames.filter(f=>f.closing).map(f=>f.clip)).size>2 &&
+          compact() && await notch.webContents.executeJavaScript(`document.querySelector('#dashboard').hidden && !document.body.classList.contains('closing-dashboard')`);
+        if(process.env.MAC_NOTCH_SMOKE_OUTPUT) {
+          fs.mkdirSync(process.env.MAC_NOTCH_SMOKE_OUTPUT,{recursive:true});
+          fs.writeFileSync(path.join(process.env.MAC_NOTCH_SMOKE_OUTPUT,`dashboard-fold-${action}.json`),JSON.stringify(frames,null,2));
+        }
+      }
+      togglePanel();await wait();togglePanel();await new Promise(r=>setTimeout(r,60));togglePanel();await wait();
+      checks.reopen=notch.getBounds().height>geometry.height && await notch.webContents.executeJavaScript(`!document.querySelector('#dashboard').hidden && !document.body.classList.contains('closing-dashboard')`);
+      await notch.webContents.executeJavaScript(`window.savedMotionQuery=window.matchMedia;window.matchMedia=q=>q==='(prefers-reduced-motion: reduce)'?{matches:true}:window.savedMotionQuery(q);void 0`);
+      togglePanel();await new Promise(r=>setTimeout(r,120));
+      checks.reducedMotion=compact();
+      await notch.webContents.executeJavaScript(`window.matchMedia=window.savedMotionQuery;delete window.savedMotionQuery`);
+      // Exercise the production IPC -> native click-through path without moving
+      // the user's real cursor or touching their settings.
+      const {screen,ipcMain}=require('electron');
+      const originalCursor=screen.getCursorScreenPoint, originalIgnore=notch.setIgnoreMouseEvents;
+      const ignores=[];notch.setIgnoreMouseEvents=function(ignore,options){ignores.push(ignore);return originalIgnore.call(this,ignore,options);};
+      try {
+        for(const point of [{x:geometry.x-20,y:geometry.y+10},{x:geometry.x+30,y:geometry.y+10},{x:geometry.x-20,y:geometry.y+10},{x:geometry.x+30,y:geometry.y+70},{x:geometry.x+30,y:geometry.y+10}]) {
+          screen.getCursorScreenPoint=()=>point;
+          ipcMain.emit('notch:pointer',{sender:notch.webContents});
+        }
+        checks.pointerPassThrough=ignores.slice(-3).join(',')==='false,true,false';
+      } finally {
+        screen.getCursorScreenPoint=originalCursor;notch.setIgnoreMouseEvents=originalIgnore;
+        ipcMain.emit('notch:pointer',{sender:notch.webContents});
+      }
+      return checks;
+    }
+    if(process.argv.includes('--dashboard-motion-smoke')) {
+      const checks=await checkDashboardMotion(),ok=Object.values(checks).every(Boolean);
+      console.log(JSON.stringify({ok,checks}));app.exit(ok?0:1);return;
+    }
+    if (process.argv.includes('--foreground-motion-smoke')) {
+      const checks=[];
+      for(const provider of PROVIDERS) for(const focusAt of ['completion','presentation']) {
+        state.sessions.clear(); notifications.clear(); syncNotification(null); await wait();
+        const id=`foreground-${provider}-${focusAt}`;
+        state.update([{provider,id,state:'running'}]);
+        state.update([{provider,id,state:'ended',notification:{title:'前台完成测试',description:'当前工具不应弹出通知'}}]);
+        notifications.observe([...state.sessions.values()],Date.now(),focusAt==='completion'?provider:null);
+        syncNotification(provider);
+        const bounds=notch.getBounds();
+        await wait();
+        checks.push({provider,focusAt,bounds,collapse:payload().collapse,ui:await notch.webContents.executeJavaScript(`({hidden:document.querySelector('#notification').hidden,closing:document.body.classList.contains('closing-notification'),notifying:document.body.classList.contains('notifying')})`)});
+        notifications.observe([...state.sessions.values()],Date.now(),null); syncNotification(null);
+        const other=provider==='claude'?'codex':'claude';
+        state.update([{provider:other,id:'background',state:'running'}]);
+        state.update([{provider:other,id:'background',state:'ended',notification:{title:'后台完成',description:'另一个工具仍然提醒'}}]);
+        notifications.observe([...state.sessions.values()],Date.now(),provider);syncNotification(provider);
+        checks.at(-1).backgroundNotifies=notifications.current?.provider===other;
+      }
+      state.sessions.clear();notifications.clear();syncNotification(null);await wait();
+      const ok=checks.every(c=>c.ui.hidden&&!c.ui.closing&&!c.ui.notifying&&c.backgroundNotifies&&!c.collapse);
+      console.log(JSON.stringify({ok,checks}));app.exit(ok?0:1);return;
+    }
+    const dashboardMotionChecks=await checkDashboardMotion();
     const results = [];
     const cases = [
       ["idle", "idle"],
@@ -87,14 +179,12 @@ module.exports = async function smoke({
     for (const fixture of cases) {
       const { tasks } = fixture,
         states = tasks.map((task) => task.state);
-      const fixtureGeometry = require("./layout").taskLayout(geometry, tasks);
-      notch.setBounds({x:fixtureGeometry.x,y:fixtureGeometry.y,width:fixtureGeometry.width,height:fixtureGeometry.height});
-      notch.webContents.send("state", { ...payload(), geometry:fixtureGeometry, tasks });
+      notch.webContents.send("state", { ...payload(), tasks });
       await new Promise((resolve) => setTimeout(resolve, 375));
       const result = await notch.webContents.executeJavaScript(
-        `({count:document.querySelectorAll('button.tool').length,width:innerWidth,height:innerHeight,overflow:document.body.scrollWidth>innerWidth,progress:[...document.querySelectorAll('.progress')].map(n=>n.textContent),dots:document.querySelectorAll('.dots i').length,question:document.querySelectorAll('.question').length,check:document.querySelectorAll('.check').length,regions:[...document.querySelectorAll('.logo,.status,.progress')].filter(n=>getComputedStyle(n).display!=='none').map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};})})`,
+        `({count:document.querySelectorAll('button.tool').length,width:document.querySelector("#notch").getBoundingClientRect().width,height:document.querySelector("#notch").getBoundingClientRect().height,overflow:document.body.scrollWidth>innerWidth,progress:[...document.querySelectorAll('.progress')].map(n=>n.textContent),dots:document.querySelectorAll('.dots i').length,question:document.querySelectorAll('.question').length,check:document.querySelectorAll('.check').length,regions:[...document.querySelectorAll('.logo,.status,.progress')].filter(n=>getComputedStyle(n).display!=='none').map(n=>{const r=n.getBoundingClientRect();const offset=document.querySelector("#notch").getBoundingClientRect().left;return {left:r.left-offset,right:r.right-offset};})})`,
       );
-      result.geometry = fixtureGeometry;
+      result.geometry = payload().geometry;
       result.sizing = await notch.webContents.executeJavaScript(`({icons:[...document.querySelectorAll('.logo')].map(n=>({provider:n.alt,width:getComputedStyle(n).width,padding:getComputedStyle(n).padding})),fonts:[...document.querySelectorAll('.progress')].map(n=>getComputedStyle(n).fontSize)})`);
       result.states = states;
       result.expectedDots =
@@ -112,7 +202,8 @@ module.exports = async function smoke({
       }
     }
 
-    notch.setBounds({x:geometry.x,y:geometry.y,width:geometry.width,height:geometry.height});
+    notch.webContents.send("state", payload());
+    await wait();
     const bounds = notch.getBounds();
     togglePanel();
     await wait();
@@ -226,10 +317,53 @@ module.exports = async function smoke({
     await notch.webContents.executeJavaScript(`document.querySelector('#notification').dispatchEvent(new MouseEvent('mouseenter'))`);
     await new Promise(r => setTimeout(r, 5200));
     notificationChecks.hoverPaused = notifications.current !== null && notifications.current.expiresAt === null;
-    await notch.webContents.executeJavaScript(`document.querySelector('#notification-close').click()`);
-    await wait();
+    const beforeFold = notch.getBounds();
+    let duringFold;
+    let foldCapture = Promise.resolve();
+    const foldSample = setTimeout(() => {
+      duringFold = notch.getBounds();
+      if(outNotification) foldCapture = notch.webContents.capturePage().then(image =>
+        fs.writeFileSync(path.join(outNotification,'fold-mid.png'),image.toPNG()));
+    }, 100);
+    const foldFrames = await notch.webContents.executeJavaScript(`new Promise(resolve => {
+      const frames=[], start=performance.now();
+      function sample() {
+        const root=document.querySelector('#notch'), logo=root.querySelector('.logo');
+        frames.push({time:performance.now()-start, height:innerHeight, x:screenX,
+          logoX:logo ? screenX+logo.getBoundingClientRect().left : null,
+          closing:document.body.classList.contains('closing-notification'),
+          visible:getComputedStyle(root).visibility!=='hidden',
+          clip:getComputedStyle(document.querySelector('#surface')).clipPath});
+        if(performance.now()-start<380) requestAnimationFrame(sample); else resolve(frames);
+      }
+      sample(); document.querySelector('#notification-close').click();
+    })`);
+    clearTimeout(foldSample);
+    await foldCapture;
+    const movingFrames=foldFrames.filter(f=>f.closing);
+    notificationChecks.fold = {
+      heldNativeFrame: duringFold?.height === beforeFold.height && duringFold?.x === beforeFold.x,
+      intermediateContours: new Set(movingFrames.map(f=>f.clip)).size > 2,
+      headerAlwaysVisible: foldFrames.every(f=>f.visible),
+      finishedCompact: compact(),
+    };
+    if(outNotification) fs.writeFileSync(path.join(outNotification,'fold-frames.json'),JSON.stringify(foldFrames,null,2));
     notificationChecks.closeKeepsUnread = !notifications.current && state.completed().some(t=>t.id===firstNotification)
-      && notch.getBounds().height === geometry.height;
+      && compact();
+    presentNotification(); await wait();
+    await notch.webContents.executeJavaScript(`document.querySelector('#notification-close').click()`);
+    await new Promise(r=>setTimeout(r,60));
+    presentNotification('收起过程中到达的新通知'); await wait();
+    notificationChecks.fold.interruptedByNewNotification = Boolean(notifications.current) && notch.getBounds().height > geometry.height &&
+      await notch.webContents.executeJavaScript(`!document.body.classList.contains('closing-notification') && document.querySelector('#surface').getAnimations().length===0`);
+    await notch.webContents.executeJavaScript(`document.querySelector('#notification-close').click()`); await wait();
+    presentNotification(); await wait();
+    await notch.webContents.executeJavaScript(`window.originalMotionQuery=window.matchMedia;
+      window.matchMedia=query=>query==='(prefers-reduced-motion: reduce)' ? {matches:true} : window.originalMotionQuery(query);
+      document.querySelector('#notification-close').click()`);
+    await new Promise(r=>setTimeout(r,120));
+    notificationChecks.fold.reducedMotionImmediate = compact();
+    await notch.webContents.executeJavaScript(`window.matchMedia=window.originalMotionQuery; delete window.originalMotionQuery`);
     const secondNotification = presentNotification(); await wait();
     await notch.webContents.executeJavaScript(`document.querySelector('#notification').dispatchEvent(new MouseEvent('mouseleave'))`);
     await new Promise(r=>setTimeout(r, 5200));
@@ -237,7 +371,7 @@ module.exports = async function smoke({
     presentNotification(); await wait();
     await notch.webContents.executeJavaScript(`document.querySelector('#notification-body').click()`);
     await wait();
-    notificationChecks.bodyOpens = !notifications.current && notch.getBounds().height === geometry.height;
+    notificationChecks.bodyOpens = !notifications.current && compact();
     presentNotification("这是一段很长的通知描述。".repeat(30)); await wait();
     notificationChecks.longText = await notch.webContents.executeJavaScript(`(() => {
       const d=document.querySelector('#notification-description').getBoundingClientRect();
@@ -257,12 +391,15 @@ module.exports = async function smoke({
     for (const provider of PROVIDERS) {
       for (const focusAt of ["completion", "presentation"]) {
         state.sessions.clear(); notifications.clear(); syncNotification(null);
+        // Finish the preceding fixture's legitimate exit before checking that
+        // a new foreground event never expands the window, even for one frame.
+        await wait();
         const id = `foreground-${provider}-${focusAt}`;
         state.update([{provider,id,state:"running"}]);
         state.update([{provider,id,state:"ended",notification:{title:"前台完成测试",description:"当前工具不应弹出通知"}}]);
         notifications.observe([...state.sessions.values()],Date.now(),focusAt==="completion" ? provider : null);
         syncNotification(provider);
-        const neverExpanded = notifications.current===null && notch.getBounds().height===geometry.height;
+        const neverExpanded = notifications.current===null && compact();
         await wait();
         const hidden = await notch.webContents.executeJavaScript(`document.querySelector('#notification').hidden && !document.body.classList.contains('notifying')`);
         notifications.observe([...state.sessions.values()],Date.now(),null); syncNotification(null);
@@ -322,7 +459,7 @@ module.exports = async function smoke({
     const visibleTask = presentNotification("通知开关测试", "codex"); await wait();
     notificationToggleChecks.push(Boolean(notifications.current));
     await changeSetting("notifications", false);
-    notificationToggleChecks.push(!notifications.current && !notifications.pending.length && notch.getBounds().height === geometry.height
+    notificationToggleChecks.push(!notifications.current && !notifications.pending.length && compact()
       && state.completed().some(t=>t.id===visibleTask));
     presentNotification("关闭期间不应展示", "codex"); await wait();
     notificationToggleChecks.push(!notifications.current && !notifications.pending.length);
@@ -435,19 +572,21 @@ module.exports = async function smoke({
       notch.webContents.send("state", {...idleData, remainingQuota:values, quotas:{claude:{stale:true},codex:{stale:true}}});
       await wait();
       quotaFitChecks.push(await notch.webContents.executeJavaScript(`(() => {
-        const g=${JSON.stringify(geometry)};
-        const regions=[...document.querySelectorAll('.logo,.idle-quota')].map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right};});
-        return {width:innerWidth, originalSize:[...document.querySelectorAll(".logo")].every(n=>getComputedStyle(n).width==="22px") && [...document.querySelectorAll(".idle-quota")].every(n=>getComputedStyle(n).fontSize==="13px" && getComputedStyle(n).letterSpacing==="normal"), fits:regions.every(r=>r.left>=0&&r.right<=innerWidth&&(!g.hardware||r.right<=(innerWidth-g.gap)/2||r.left>=(innerWidth+g.gap)/2))};
+        const root=document.querySelector("#notch"), cameraLeft=Number(root.dataset.cameraLeft), gap=Number(root.dataset.cameraGap);
+        const regions=[...document.querySelectorAll('.logo,.idle-quota')].map(n=>{const r=n.getBoundingClientRect();const offset=document.querySelector("#notch").getBoundingClientRect().left;return {left:r.left-offset,right:r.right-offset};});
+        return {width:root.getBoundingClientRect().width, originalSize:[...document.querySelectorAll(".logo")].every(n=>getComputedStyle(n).width==="22px") && [...document.querySelectorAll(".idle-quota")].every(n=>getComputedStyle(n).fontSize==="13px" && getComputedStyle(n).letterSpacing==="normal"), fits:regions.every(r=>r.left>=0&&r.right<=root.getBoundingClientRect().width&&(!gap||r.right<=cameraLeft||r.left>=cameraLeft+gap))};
       })()`));
     }
     const ok =
+      Object.values(dashboardMotionChecks).every(Boolean) &&
       gestureChecks.every(Boolean) && assistanceChecks.every(Boolean) && previewChecks.loaded && previewChecks.scrollable && previewChecks.updateVisible !== false &&
       notificationToggleChecks.every(Boolean) &&
       foregroundChecks.every(r=>r.neverExpanded && r.hidden && r.noReplay && r.otherStillNotifies) &&
       liveSettingsChecks.every(Boolean) &&
-      quotaFitChecks.every(r=>r.fits&&r.originalSize&&r.width===geometry.width) &&
+      quotaFitChecks.every(r=>r.fits&&r.originalSize) &&
       dashboardChecks.every(r=>r.noScroll && r.fits && r.footerVisible) &&
       notificationChecks.codexSource && notificationChecks.codexClick &&
+      Object.values(notificationChecks.fold).every(Boolean) &&
       (!notificationChecks.liveVisits || notificationChecks.liveVisits.every(r=>r.foreground===r.provider && r.cleared && r.notificationClosed && r.runningKept && r.waitingKept)) &&
       notificationChecks.layout.visible && notificationChecks.layout.belowCamera && notificationChecks.layout.bottomFlush &&
       notificationChecks.layout.contentHeight === 82 && notificationChecks.layout.gap === "3px" && JSON.stringify(notificationChecks.layout.fonts) === JSON.stringify(["12px","15px","13px"]) &&
@@ -462,7 +601,6 @@ module.exports = async function smoke({
       periodChecks.out.every(r => r.pressed === 'true' && r.bars > 0) &&
       results.every(r => r.sizing.icons.every(i => i.width === '22px' && i.padding === (i.provider === 'codex' ? '3px' : '0px')) && r.sizing.fonts.every(f => f === '15px')) &&
       bounds.y === geometry.y &&
-      bounds.width === geometry.width &&
       panelCheck.quotaCards === 2 &&
       panelCheck.bars === 24 &&
       !panelCheck.overflow &&
@@ -488,14 +626,14 @@ module.exports = async function smoke({
           (!geometry.hardware ||
             r.regions.every(
               (region) =>
-                region.right <= (r.geometry.width - r.geometry.gap) / 2 + 1 ||
-                region.left >= (r.geometry.width + r.geometry.gap) / 2 - 1,
+                region.right <= r.geometry.cameraLeft + 1 ||
+                region.left >= r.geometry.cameraLeft + r.geometry.gap - 1,
             )),
       );
     console.log(
       "SMOKE",
       JSON.stringify({
-        ok, gestureChecks, assistanceChecks, previewChecks,
+        ok, dashboardMotionChecks, gestureChecks, assistanceChecks, previewChecks,
         bounds,
         geometry,
         panelCheck,

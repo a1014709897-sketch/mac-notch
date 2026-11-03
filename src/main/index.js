@@ -26,7 +26,7 @@ const { NotificationQueue, sessionURL } = require("./notifications");
 const notifications = new NotificationQueue();
 const { createUpdater } = require("./updates");
 let updater;
-const { taskLayout, layout, expandedLayout, notificationLayout } = require("./layout");
+const { contentLayout, contentKey, layout, expandedLayout, notificationLayout } = require("./layout");
 const { Worker } = require("node:worker_threads");
 const { summarize } = require("./usage");
 const { createStore } = require("./store");
@@ -76,6 +76,9 @@ let notch,
   expanded = false,
   currentDisplay;
 let usage = { ...summarize([]), loading: true };
+let compactFrame = null, ignoringPointer = null;
+let boundsMode = "compact", collapseSequence = 0, collapseMotion = null, collapseTimeout;
+const { compactHostBounds, containsPoint } = require("./layout");
 const enabled = () => PROVIDERS.filter((p) => store.public().providers[p]);
 const state = new TaskState(),
   readState = createTaskReadState(),
@@ -93,6 +96,8 @@ function payload() {
     remainingQuota: Object.fromEntries(PROVIDERS.map(p => [p, remaining(quotas[p])])),
     settings: store.public(),
     geometry,
+    frame: notch && !notch.isDestroyed() ? notch.getBounds() : null,
+    collapse: collapseMotion,
     expanded,
     notification: expanded || locked ? null : notifications.current,
     usage,
@@ -101,15 +106,19 @@ function payload() {
     demo,
   };
 }
+function syncPointerRegion() {
+  if (!geometry || !notch || notch.isDestroyed() || app.isQuitting) return;
+  const interactive = expanded ? expandedLayout(currentDisplay, geometry)
+    : notifications.current && !locked ? notificationLayout(currentDisplay, geometry) : geometry;
+  const ignore = locked || !enabled().length || !containsPoint(interactive, screen.getCursorScreenPoint());
+  if (ignore !== ignoringPointer) {
+    ignoringPointer = ignore;
+    notch.setIgnoreMouseEvents(ignore, {forward: true});
+  }
+}
 function render() {
   if (!notch || notch.isDestroyed()) return;
-  if (baseGeometry) {
-    const nextGeometry = taskLayout(baseGeometry, state.snapshot().filter(t => enabled().includes(t.provider)));
-    if (nextGeometry.width !== geometry.width) {
-      geometry = nextGeometry;
-      applyBounds();
-    }
-  }
+  syncPointerRegion();
   const data = payload(),
     encoded = JSON.stringify(data);
   if (encoded !== lastRender) {
@@ -119,6 +128,9 @@ function render() {
   }
 }
 function position() {
+  compactFrame = null;
+  cancelCollapse();
+  boundsMode = "compact";
   const native = readMacNotchScreens({ refresh: true });
   const displays = screen.getAllDisplays();
   const notched = native.screens?.find(
@@ -132,20 +144,54 @@ function position() {
         String(d.id) === String(notched?.displayId || native.mainDisplayId),
     ) || screen.getPrimaryDisplay();
   currentDisplay = display;
-  baseGeometry = geometry = layout(
+  baseGeometry = layout(
     display,
     native.screens?.find((s) => String(s.displayId) === String(display.id)),
-    store.public().idleQuota,
   );
+  geometry = geometry?.left !== undefined ? contentLayout(baseGeometry, geometry) : baseGeometry;
   applyBounds();
   lastRender = "";
   render();
 }
+function cancelCollapse() {
+  clearTimeout(collapseTimeout);
+  collapseMotion = null;
+}
+function finishCollapse(id) {
+  if (collapseMotion?.id !== id || !notch || notch.isDestroyed()) return;
+  compactFrame = notch.getBounds();
+  cancelCollapse();
+  applyBounds();
+  render();
+}
 function applyBounds() {
-  if (!geometry) return;
-  const bounds = expanded ? expandedLayout(currentDisplay, geometry)
-    : notifications.current && !locked ? notificationLayout(currentDisplay, geometry) : geometry;
+  if (!geometry || !notch || notch.isDestroyed() || app.isQuitting) return;
+  const mode = expanded ? "expanded" : notifications.current && !locked ? "notification" : "compact";
+  if (mode !== "compact") compactFrame = null;
+  const bounds = mode === "expanded" ? expandedLayout(currentDisplay, geometry)
+    : mode === "notification" ? notificationLayout(currentDisplay, geometry) : compactHostBounds(compactFrame, geometry);
+  if (mode === "compact" && compactFrame) compactFrame = bounds;
   const current = notch.getBounds();
+  // Keep one native canvas through the fold and after completion. Moving or
+  // resizing it at the final frame races Chromium paint with AppKit placement.
+  const canFold = mode === "compact" && !locked && enabled().length &&
+    current.y === bounds.y && current.height > bounds.height;
+  if (collapseMotion && !canFold) cancelCollapse();
+  if (!collapseMotion && ["notification", "expanded"].includes(boundsMode) && canFold) {
+    collapseMotion = { id: ++collapseSequence, from: current, fromMode: boundsMode };
+    const id = collapseMotion.id;
+    collapseTimeout = setTimeout(() => finishCollapse(id), 600);
+  }
+  boundsMode = mode;
+  if (collapseMotion) {
+    // The next task state can be wider than the card (e.g. both idle quotas).
+    // Retain enough transparent host space for both outlines during the fold.
+    const left = Math.min(current.x, bounds.x);
+    const right = Math.max(current.x + current.width, bounds.x + bounds.width);
+    if (left !== current.x || right - left !== current.width)
+      notch.setBounds({ x: left, y: current.y, width: right - left, height: current.height });
+    return;
+  }
   if (["x", "y", "width", "height"].every(key => current[key] === bounds[key])) return;
   notch.setBounds({
     x: bounds.x,
@@ -158,6 +204,7 @@ function togglePanel() {
   setExpanded(!expanded);
 }
 function setExpanded(value) {
+  if (!notch || notch.isDestroyed() || app.isQuitting) return;
   expanded = value;
   notifications.pause("dashboard", value);
   if (value) { notifications.pause("hover", false); notifications.pause("focus", false); }
@@ -383,6 +430,7 @@ async function scan() {
   }
 }
 function own(event) {
+  if (app.isQuitting) return false;
   return [notch, panel].some(
     (w) => w && !w.isDestroyed() && w.webContents === event.sender,
   );
@@ -464,9 +512,26 @@ app.whenReady().then(async () => {
     }
   });
   ipcMain.handle("state:get", (event) => (own(event) ? payload() : null));
+  ipcMain.on("notch:pointer", event => {
+    if (notch && !notch.isDestroyed() && event.sender === notch.webContents) syncPointerRegion();
+  });
+  ipcMain.handle("notch:collapse-finished", (event, id) => {
+    if (notch && !notch.isDestroyed() && !app.isQuitting && event.sender === notch.webContents) finishCollapse(id);
+  });
+  ipcMain.handle("notch:measure", (event, measurement) => {
+    if (!notch || notch.isDestroyed() || app.isQuitting) return null;
+    if (event.sender !== notch.webContents || !baseGeometry || !measurement) return null;
+    const { left, right, single, key } = measurement;
+    if (![left, right].every(n => Number.isInteger(n) && n >= 0 && n <= 1024) ||
+        typeof single !== "boolean" || (!smoke && key !== contentKey(payload()))) return null;
+    geometry = contentLayout(baseGeometry, { left, right, single });
+    applyBounds();
+    syncPointerRegion();
+    return { geometry, frame: notch.getBounds(), collapse: collapseMotion };
+  });
   for (const action of ["dismiss", "open", "hover", "focus"]) {
     ipcMain.on(`notification:${action}`, (event, key, value) => {
-      if (event.sender !== notch.webContents || key !== notifications.current?.key) return;
+      if (app.isQuitting || !notch || notch.isDestroyed() || event.sender !== notch.webContents || key !== notifications.current?.key) return;
       if (action === "open") return openNotification(key);
       if (action === "dismiss") notifications.dismiss(key);
       else notifications.pause(action, value === true);
@@ -480,7 +545,7 @@ app.whenReady().then(async () => {
     if (own(event)) togglePanel();
   });
   ipcMain.on("gesture", (event, gesture) => {
-    if (event.sender !== notch.webContents || !["double", "right"].includes(gesture)) return;
+    if (app.isQuitting || !notch || notch.isDestroyed() || event.sender !== notch.webContents || !["double", "right"].includes(gesture)) return;
     const settingsGesture = store.public().swapGestures ? "double" : "right";
     if (gesture === settingsGesture) showSettings(); else togglePanel();
   });
@@ -544,7 +609,6 @@ app.whenReady().then(async () => {
       const providersChanged = PROVIDERS.some(p => before.providers[p] !== result.providers[p]);
       const menuChanged = PROVIDERS.some(p => before.menuBar[p] !== result.menuBar[p]);
       if (providersChanged || menuChanged) syncProviders({ refilterUsage: providersChanged });
-      if (result.idleQuota !== before.idleQuota) position();
       lastRender = "";
       render();
       const newlyEnabled = PROVIDERS.filter(p => !before.providers[p] && result.providers[p]);
@@ -616,6 +680,7 @@ app.whenReady().then(async () => {
   screen.on("display-removed", position);
   powerMonitor.on("lock-screen", () => {
     locked = true;
+    cancelCollapse();
     visitAttention([], null);
     notifications.clear();
     notifications.pause("lock", true);
@@ -659,6 +724,7 @@ app.whenReady().then(async () => {
 });
 app.on("before-quit", () => {
   app.isQuitting = true;
+  cancelCollapse();
   clearInterval(scanTimer);
   clearInterval(quotaTimer);
   clearInterval(attentionTimer);

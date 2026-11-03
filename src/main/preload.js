@@ -1,6 +1,9 @@
 "use strict";
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("macNotch", {
+  pointer: () => ipcRenderer.send("notch:pointer"),
+  measure: value => ipcRenderer.invoke("notch:measure", value),
+  finishCollapse: id => ipcRenderer.invoke("notch:collapse-finished", id),
   get: () => ipcRenderer.invoke("state:get"),
   onState: (callback) =>
     ipcRenderer.on("state", (_event, state) => callback(state)),

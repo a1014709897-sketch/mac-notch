@@ -27,7 +27,7 @@ flowchart LR
 - `src/main/index.js`：刘海收起/展开的同一窗口、居中设置窗口和菜单栏生命周期、1 秒前台与会话已读检测、显示器/锁屏处理、IPC 所有者验证。
 - `src/main/tool-launcher.js`：工具和会话打开共用白名单启动入口，统一接住同步/异步执行失败，10 秒超时；请求去重和全局提示限频，不输出底层错误或会话 URL。仅返回成功/失败，提醒和已查看状态仍由调用方处理。
 - `src/main/store.js`：独立 `Mac Notch/settings.json`，手工凭据使用 safeStorage 加密；public DTO 不包含密钥。
-- `src/main/layout.js`：从 AppKit safeArea 得到硬件摄像头区域；普通状态使用基础翼宽，多任务计数按需扩宽两侧。通知与用量面板在同一窗口中展开，保留摄像头区域。
+- `src/main/layout.js`：从 AppKit safeArea 得到硬件摄像头区域；renderer 测量未受动画变换影响的内容宽度，通过仅刘海窗口可调用的 `notch:measure` IPC 交由主进程定位；校验内容签名以丢弃过期测量。两翼按内容独立伸缩、外边距相同，摄像头安全区固定。通知与用量面板在同一窗口中展开，保留摄像头区域。
 <!--
 - `src/vendor/token-monitor`：有限的 MIT 复用代码，保留目录结构以便追踪来源。DSH 两个文件仅用于压缩帧解析，不启用 DSH 客户端。
 -->
@@ -50,3 +50,8 @@ Codex 已读来自本机 `electron-thread-read-state-v1` 的 local 线程未读�
 - `usage.js` / `pricing.js`：请求去重、累计差值、日历日汇总、标准 API 费用估算与未计价覆盖率。
 
 `src/main/updates.js` 在主进程完成语义版本比较、发布渠道/架构选择、流式下载与 SHA-256 校验。renderer 仅通过固定操作接收状态和更新说明，不提供任意下载 URL 或本地打开路径。
+
+
+### 收起动画的原生画布（2026-11-03）
+
+紧凑可见区域 `geometry` 与原生 `frame` 分开：退出动画完成后保留原生画布，避免 AppKit 窗口移动/缩放与 Chromium 页面重绘之间的一帧坐标错位。可见轮廓仍按内容测宽，摄像头位置不变。主进程用真实屏幕指针与可见区域判断点击，透明区域启用 `setIgnoreMouseEvents(true, {forward: true})`；渲染器转发鼠标移动，只请求重新检测，不决定坐标或权限。屏幕变化重置画布，后续内容超过画布时扩容。

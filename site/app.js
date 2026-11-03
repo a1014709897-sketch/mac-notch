@@ -22,23 +22,23 @@
   };
   function render() {
     display.dataset.state = state;
-    display.dataset.tool = state === "idle" ? "both" : tool;
-    const visibleTool = display.dataset.tool;
-    notch.querySelector(".single-hit").hidden = visibleTool === "both";
-    notch.querySelectorAll(".notch-tool").forEach(button => { button.tabIndex = visibleTool === "both" ? 0 : -1; });
-    notch.querySelector(".single-hit").setAttribute("aria-label", `演示打开 ${names[visibleTool]} 客户端`);
-    document.querySelectorAll(".task-indicator").forEach(el => { el.innerHTML = indicators[state]; });
+    display.dataset.tool = "both";
+    const visibleTool = state === "idle" ? "both" : tool;
+    notch.querySelectorAll(".notch-tool").forEach(button => {
+      const ownState = tool === "both" || button.dataset.client === tool ? state : "idle";
+      button.dataset.state = ownState;
+      button.querySelector(".task-indicator").innerHTML = indicators[ownState];
+    });
     document.querySelectorAll(".state-controls button").forEach(el => el.setAttribute("aria-pressed", String(el.dataset.state === state)));
     document.querySelectorAll(".tool-controls button").forEach(el => {
       el.setAttribute("aria-pressed", String(el.dataset.tool === tool));
-      el.disabled = state === "idle" && el.dataset.tool !== "both";
     });
     const [title, description] = descriptions[state];
     document.querySelector("#client-name").textContent = names[visibleTool];
     document.querySelector("#work-title").textContent = title;
     document.querySelector("#work-description").textContent = description;
     const stateLabel = document.querySelector(`.state-controls button[data-state="${state}"]`).textContent;
-    document.querySelector("#demo-status").textContent = `${names[visibleTool]}：${stateLabel}`;
+    document.querySelector("#demo-status").textContent = `${names[visibleTool]}：${stateLabel}${visibleTool === "both" ? "" : `；${names[visibleTool === "claude" ? "codex" : "claude"]}：闲置，入口保留`}`;
     document.querySelector(".window-claude").hidden = visibleTool === "codex";
     document.querySelector(".window-codex").hidden = visibleTool === "claude";
   }
@@ -71,7 +71,7 @@
   function openClient(event) {
     const button = event.target.closest("button");
     if (!button) return;
-    const client = button.classList.contains("single-hit") ? tool : button.dataset.client;
+    const client = button.dataset.client;
     clearTimeout(clickTimer);
     clickTimer = setTimeout(() => {
       closeQuota();
