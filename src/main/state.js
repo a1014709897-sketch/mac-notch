@@ -31,6 +31,7 @@ class TaskState {
       if (fresh) {
         next.acknowledged = false;
         next.completedAt = null;
+        next.completionYielded = false;
       }
       if (row.state === "waiting") {
         const continued = old?.state === "waiting" && !fresh;
@@ -52,7 +53,7 @@ class TaskState {
     for (const [key, row] of this.sessions) {
       if (!present.has(key) && row.state !== "ended" && now - row.seen > 30000)
         this.sessions.delete(key);
-      if (row.state === "ended" && now - row.completedAt > 24 * 3600000)
+      if (row.state === "ended" && row.acknowledged && now - row.completedAt > 24 * 3600000)
         this.sessions.delete(key);
     }
     return this.snapshot();
@@ -73,7 +74,10 @@ class TaskState {
       );
       rows.sort((a, b) => rank[b.state] - rank[a.state] || b.seen - a.seen);
       const batch = batches.get(provider);
-      const state = batch?.total > 1 ? batch.state : rows[0]?.state || "idle";
+      const baseState = batch?.total > 1 ? batch.state : rows[0]?.state || "idle";
+      // A fresh completion briefly owns this tool's badge, never a help request.
+      const flashCompletion = rows.some(row => row.state === "ended" && !row.completionYielded);
+      const state = baseState === "running" && flashCompletion ? "ended" : baseState;
       return {
         provider,
         state,
@@ -88,6 +92,19 @@ class TaskState {
     return [...this.sessions.values()]
       .filter((row) => row.state === "ended" && !row.acknowledged)
       .map(({ provider, id, completedAt }) => ({ provider, id, completedAt }));
+  }
+  expireCompletionBadges(now = Date.now(), protectedTasks = []) {
+    const protectedKeys = new Set(protectedTasks.map(task => `${task.provider}:${task.sessionId}`));
+    const activeProviders = new Set([...this.sessions.values()]
+      .filter(row => !row.acknowledged && ["running", "waiting"].includes(row.state))
+      .map(row => row.provider));
+    for (const row of this.sessions.values()) {
+      if (row.state === "ended" && !row.acknowledged &&
+          activeProviders.has(row.provider) &&
+          Number.isFinite(row.completedAt) && now - row.completedAt >= 8000 &&
+          !protectedKeys.has(`${row.provider}:${row.id}`))
+        row.completionYielded = true;
+    }
   }
   acknowledge(provider, sessionId) {
     if (!sessionId) return;

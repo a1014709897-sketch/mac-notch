@@ -236,7 +236,8 @@ function syncNotification(foreground) {
       (!(demo || smoke) || foreground === undefined))
     foreground = notificationForeground();
   notifications.tick(Date.now(), foreground);
-  const key = JSON.stringify([notifications.current, expanded, locked]);
+  state.expireCompletionBadges(Date.now(), [...notifications.pending, ...(notifications.current ? [notifications.current] : [])]);
+  const key = JSON.stringify([notifications.current, expanded, locked, state.snapshot()]);
   if (key === lastNotification) return;
   lastNotification = key;
   applyBounds();

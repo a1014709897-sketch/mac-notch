@@ -111,8 +111,8 @@ test("batch progress survives partial completion and acknowledgement, then reset
   assert.deepEqual(s.snapshot()[1].progress, { done: 2, total: 2 });
   assert.equal(s.snapshot()[1].state, "ended");
   s.update([r("d", "running")], 400);
-  assert.equal(s.snapshot()[1].progress, null);
-  assert.equal(s.snapshot()[1].count, 1);
+  assert.deepEqual(s.snapshot()[1].progress, { done: 2, total: 3 });
+  assert.equal(s.snapshot()[1].count, 3);
 });
 
 test("all displays attach at top; expanded surface stays below its own camera header", () => {

@@ -6,7 +6,7 @@
     "src/electron/notch/desktopCompletion.js": "e9bedf11d421ae1b7e54b9eadf645cbfcc396a3ad75569f37831cf48340ddeca",
     "src/electron/notch/screen.js": "2c18a462724b92b0b25e5c41320e658ca01153b74d114fe9e15f8f5061b6f321",
     "src/electron/notch/taskAttention.js": "7bbe408ce44f9f551c2b64cb919f93c3ffb9f9391149acd4eeca9493ef5fc0c4",
-    "src/electron/notch/taskBatch.js": "2ab99adf1cc33c36866dfb69f9508f8f9a080b7c3e4d12ab77cf20836eaab6d0",
+    "src/electron/notch/taskBatch.js": "18e19a3937e7620c46ba64aa31baccc78fa3cca96b1911f23ddcc951a02bea59",
     "src/electron/notch/taskReadState.js": "3d4fdb103f882b241e9afb2abbca88cf79df5d6e0fa3e807d79bc18004789648",
     "src/shared/providers/codex/sessionContext.js": "c9f933469a950327923ad0659d4c8578b753089b789de603861d9fc85310055d",
     "src/shared/providers/codex/sessionIdentity.js": "7563c7beade30276d47213a0569d663e9bd2e6fc3d5e1c70f36a0c453e7f319b",

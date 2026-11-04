@@ -13,7 +13,8 @@ function createTaskBatches() {
       }
       const live = [...current].filter(([, state]) => state === 'running' || state === 'waiting');
       let batch = batches.get(provider);
-      if (live.length && (!batch || [...batch.values()].every(state => state === 'ended'))) {
+      const retainsUnreadCompletion = batch && [...batch].some(([id, state]) => state === 'ended' && current.get(id) === 'ended');
+      if (live.length && (!batch || ([...batch.values()].every(state => state === 'ended') && !retainsUnreadCompletion))) {
         batch = new Map(); batches.set(provider, batch);
       }
       if (!batch) continue;
