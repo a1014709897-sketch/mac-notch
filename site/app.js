@@ -3,6 +3,7 @@
   const display = document.querySelector("#demo-display");
   const notch = document.querySelector("#demo-notch");
   const quota = document.querySelector("#quota-panel");
+  const notification = document.querySelector("#notification-preview");
   const toast = document.querySelector("#demo-toast");
   const copyButton = document.querySelector("#copy-command");
   let state = "running", tool = "both", clickTimer, toastTimer, copyTimer;
@@ -20,7 +21,27 @@
     waiting: '<span class="question">?</span>',
     ended: '<svg class="done"><use href="#check"/></svg>',
   };
+  function closeNotification(restoreFocus = false) {
+    notification.hidden = true;
+    display.classList.remove("notifying");
+    if (restoreFocus) document.querySelector(`.state-controls [data-state="${state}"]`).focus();
+  }
+  function renderNotification() {
+    const active = state === "waiting" || state === "ended";
+    notification.hidden = !active;
+    display.classList.toggle("notifying", active);
+    if (!active) return;
+    const provider = tool === "both" ? (state === "waiting" ? "codex" : "claude") : tool;
+    notification.dataset.provider = provider;
+    notification.dataset.kind = state;
+    document.querySelector("#notification-source").textContent = `${names[provider]} · ${state === "waiting" ? "需要协助" : "任务已完成"}`;
+    document.querySelector("#notification-mark").innerHTML = indicators[state];
+    document.querySelector("#notification-description").textContent = state === "waiting"
+      ? "首页用浅色还是深色？请确认后继续。"
+      : "首页已更新，通知演示和移动端布局已完成。";
+  }
   function render() {
+    renderNotification();
     display.dataset.state = state;
     display.dataset.tool = "both";
     const visibleTool = state === "idle" ? "both" : tool;
@@ -50,6 +71,7 @@
   function toggleQuota(trigger) {
     clearTimeout(clickTimer);
     if (!quota.hidden) { closeQuota(true); return; }
+    closeNotification();
     lastQuotaTrigger = trigger;
     quota.hidden = false;
     document.querySelector("#close-quotas").focus();
@@ -82,6 +104,12 @@
       setTimeout(() => window.classList.remove("focused"), 1200);
     }, event.detail === 0 ? 0 : 350);
   }
+  document.querySelector("#notification-close").addEventListener("click", () => closeNotification(true));
+  document.querySelector("#notification-body").addEventListener("click", () => {
+    const provider = notification.dataset.provider;
+    closeNotification(true);
+    showToast(`演示：回到 ${names[provider]} 查看${state === "waiting" ? "并回答问题；关闭通知不代表已回答" : "任务结果"}`);
+  });
   notch.addEventListener("click", openClient);
   notch.addEventListener("dblclick", event => {
     clearTimeout(clickTimer); event.preventDefault();
@@ -95,7 +123,7 @@
     }
   });
   document.querySelector("#close-quotas").addEventListener("click", () => closeQuota(true));
-  document.addEventListener("keydown", event => { if (event.key === "Escape") closeQuota(true); });
+  document.addEventListener("keydown", event => { if (event.key === "Escape") { closeQuota(true); if (!notification.hidden) closeNotification(true); } });
   document.addEventListener("click", event => { if (!quota.contains(event.target) && !notch.contains(event.target)) closeQuota(); });
   copyButton.addEventListener("click", async () => {
     const command = document.querySelector("#install-command").textContent;

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f4">
   <title>Mac Notch — 在 Mac 顶部查看 AI 任务和额度</title>
-  <meta name="description" content="在 Mac 顶部查看 Claude 和 Codex 的任务状态与剩余额度。免费开源，复制命令即可交给 AI 帮你安装。">
+  <meta name="description" content="Claude 和 Codex 完成任务、需要你回答时，从 Mac 顶部提醒你。任务状态与剩余额度，抬眼可见。免费开源，复制命令即可交给 AI 帮你安装。">
   <meta property="og:title" content="Mac Notch — AI 任务进度，抬眼就知道。">
   <meta property="og:description" content="Claude 与 Codex 的任务状态、协助提醒和订阅额度。macOS 专属，MIT 开源。">
   <meta property="og:type" content="website">
@@ -39,7 +39,7 @@
   <main id="main">
     <section class="hero shell" aria-labelledby="hero-title">
       <h1 id="hero-title">AI 任务进度，<span>抬眼就知道。</span></h1>
-      <p class="hero-description">在 Mac 顶部查看 Claude 和 Codex 的任务状态与剩余额度。</p>
+      <p class="hero-description">Claude 和 Codex 完成任务、需要你回答时，从 Mac 顶部提醒你。任务状态与剩余额度，抬眼可见。</p>
       <div class="hero-actions">
         <a class="button" href="#install">一键安装 <svg aria-hidden="true"><use href="#arrow"/></svg></a>
       </div>
@@ -55,7 +55,7 @@
           <span class="camera-space" aria-hidden="true"></span>
           <button class="notch-tool codex" data-client="codex" type="button" aria-label="演示打开 Codex 客户端"><img src="./assets/codex.svg" alt="Codex"><span class="task-indicator" aria-hidden="true"></span></button>
         </div>
-        <div class="desktop-note" aria-hidden="true"><p>你专心工作。<br>进度随时可见。</p></div>
+        <div class="desktop-note" aria-hidden="true"><p>你专心工作。<br>有事再提醒你。</p></div>
         <div class="work-window" id="work-window">
           <div class="window-header"><span class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></span><span id="client-name">Claude + Codex</span><span class="window-badge">示例任务</span></div>
           <div class="window-content">
@@ -64,6 +64,14 @@
             <span id="work-description">页面设计与功能实现</span>
           </div>
         </div>
+        <section class="notification-preview" id="notification-preview" aria-label="模拟任务通知" hidden>
+          <button class="notification-body" id="notification-body" type="button">
+            <span id="notification-source">Codex · 需要协助</span>
+            <strong><span>制作产品官网</span><span id="notification-mark" aria-hidden="true"></span></strong>
+            <span id="notification-description">首页用浅色还是深色？请确认后继续。</span>
+          </button>
+          <button class="notification-close" id="notification-close" type="button" aria-label="收起模拟通知">×</button>
+        </section>
         <div id="quota-panel" class="quota-panel" role="region" aria-label="模拟额度面板" hidden>
           <div class="quota-header"><b>剩余额度</b><button id="close-quotas" aria-label="关闭模拟额度面板" type="button">×</button></div>
           <div class="quota-entry"><div><img src="./assets/claude.svg" alt=""><span>Claude</span><b>97<small>%</small></b></div><div class="quota-track"><i style="width:97%"></i></div><p>5 小时额度</p></div>
@@ -76,7 +84,7 @@
         <div class="state-controls segmented" role="group" aria-label="选择演示状态">
           <button type="button" data-state="idle" aria-pressed="false">空闲</button>
           <button type="button" data-state="running" aria-pressed="true">进行中</button>
-          <button type="button" data-state="waiting" aria-pressed="false">需协助</button>
+          <button type="button" data-state="waiting" aria-pressed="false">需要协助</button>
           <button type="button" data-state="ended" aria-pressed="false">已完成</button>
         </div>
         <div class="tool-controls segmented" role="group" aria-label="选择任务来自哪个工具">
@@ -85,6 +93,7 @@
           <button type="button" data-tool="codex" aria-pressed="false">Codex</button>
         </div>
       </div>
+      <p class="demo-hint">交互演示 · 点击「需要协助」或「已完成」预览通知；为方便阅读，网页预览不会自动收起。</p>
       <p class="sr-only" id="demo-status" aria-live="polite"></p>
       <noscript><p class="noscript-note">启用 JavaScript 可操作演示。安装命令和下载链接仍可使用。</p></noscript>
     </section>
@@ -92,6 +101,14 @@
     <section class="features shell section" id="details" aria-labelledby="features-title">
       <div class="section-heading"><h2 id="features-title">少切窗口，也能掌握进度。</h2></div>
       <div class="feature-grid">
+        <article class="feature feature-notification">
+          <div class="feature-visual"><img src="./assets/notification-ended.png" alt="任务完成通知：会话标题后显示绿色勾，正文展示本轮结果" loading="lazy" width="720" height="228"></div>
+          <div class="feature-copy"><h3>任务完成，提醒你看结果</h3><p>通知直接显示会话名和本轮结果。点一下回到客户端，不用反复切窗口确认进度。</p></div>
+        </article>
+        <article class="feature feature-notification">
+          <div class="feature-visual"><img src="./assets/notification-waiting.png" alt="需要协助通知：会话标题后显示金色问号，正文展示待回答的问题" loading="lazy" width="720" height="228"></div>
+          <div class="feature-copy"><h3>需要你回答，把问题带过来</h3><p>Codex 等待你选择或补充信息时，通知展示待回答的问题。关闭通知不会把问题当作已回答。</p></div>
+        </article>
         <article class="feature feature-status">
           <div class="feature-visual status-gallery" aria-label="进行中显示三点，需协助显示问号，已完成显示对勾">
             <div><span class="mini-notch"><img src="./assets/claude.svg" alt="Claude"><span class="dots"><i></i><i></i><i></i></span></span><small>进行中</small></div>
@@ -138,7 +155,7 @@
         <details><summary>免费吗？需要另外注册账号吗？<span aria-hidden="true">+</span></summary><p>Mac Notch 免费开源，不需要注册账号。额度查询使用你已有的 Claude 或 Codex 订阅。如果没有获取 Claude 状态，请运行 Claude Code CLI（claude），完成订阅账号登录后刷新。<a href="https://github.com/a1014709897-sketch/mac-notch#登录与额度">查看登录说明</a></p></details>
         <details><summary>只用 Claude 或 Codex 其中一个，可以吗？<span aria-hidden="true">+</span></summary><p>可以。首次打开时选择你使用的工具，之后也能在设置中分别开关。关闭的工具不会再显示图标或查询额度。</p></details>
         <details><summary>需要我回答时，会提醒吗？<span aria-hidden="true">+</span></summary><p>“需要协助通知”与“任务完成通知”可分别开关，控制页提供效果图和预览按钮。通知标题显示会话名，完成时附绿色勾，待协助时附金色问号。Codex 协助通知正文显示当前待回答的问题，部分回答后只保留剩余问题；取不到问题正文时使用通用提示。关闭通知不会把问题当成已回答，重新开启也不补弹旧问题。</p></details>
-        <details><summary>任务完成后，提醒什么时候消失？<span aria-hidden="true">+</span></summary><p>完成通知默认开启，可在设置中关闭；关闭后保留任务状态，重新开启不补弹旧通知。通知默认显示 5 秒，悬停暂停。切回对应工具并持续停留约 1–2 秒，会消除该工具已有的完成提醒；这不改变客户端自己的已读状态。通知展开时，顶部任务条的勾和问号会隐藏，收起后按真实任务状态恢复。需要协助时，要实际回应或让任务继续，问号才会消失。</p></details>
+        <details><summary>任务完成后，提醒什么时候消失？<span aria-hidden="true">+</span></summary><p>完成通知默认开启，可在设置中关闭；关闭后保留任务状态，重新开启不补弹旧通知。完成通知默认显示 5 秒，协助通知显示 8 秒，悬停暂停。切回对应工具并持续停留约 1–2 秒，会消除该工具已有的完成提醒；这不改变客户端自己的已读状态。通知展开时，顶部任务条的勾和问号会隐藏，收起后按真实任务状态恢复。需要协助时，要实际回应或让任务继续，问号才会消失。</p></details>
         <details><summary>为什么偶尔没有提醒，或提醒没有消失？<span aria-hidden="true">+</span></summary><p>提醒依赖客户端提供的本地状态，暂时不能覆盖所有权限弹窗或远程任务。对应工具在前台时不弹出它的通知；另一个工具在后台仍可提醒。<a href="https://github.com/a1014709897-sketch/mac-notch/issues">反馈问题</a></p></details>
         <details><summary>会上传我的对话，或者改变代理设置吗？<span aria-hidden="true">+</span></summary><p>任务记录仅在本机读取，不上传到 Mac Notch 的服务器。额度查询直接连接对应厂商，默认使用系统代理，不改变 Claude 或 Codex 的网络设置。Token 用量只统计本机已有记录，费用是 API 价格估算，不是订阅账单。</p></details>
         <details><summary>如何更新或卸载？<span aria-hidden="true">+</span></summary><p>安装命令会校验安装包，再安装到用户的应用程序目录；不会覆盖已有应用。控制页可检查更新、下载并校验安装包，再打开安装包完成升级；不会自动替换应用。卸载时退出应用并删除 Mac Notch.app 即可，个人配置会保留。<a href="https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.5">查看版本与下载</a></p></details>

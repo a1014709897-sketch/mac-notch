@@ -291,3 +291,23 @@ summary span { flex-shrink: 0; font-size: 24px; font-weight: 300; color: #667d5b
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Notification preview joins the existing notch below its camera-safe header. */
+.notification-preview { position: absolute; z-index: 3; top: 46px; left: 50%; transform: translateX(-50%); width: 360px; background: #080b09; color: #f0f3f1; border-radius: 0 0 17px 17px; box-shadow: 0 14px 24px #14251b30; overflow: hidden; }
+.notifying .notch { border-radius: 0; box-shadow: none; }
+.notifying .notch .question, .notifying .notch .done { visibility: hidden; }
+.notification-body { display: flex; flex-direction: column; gap: 5px; width: 100%; padding: 10px 16px 18px; border: 0; background: transparent; color: inherit; text-align: left; }
+.notification-body:hover { background: #ffffff0b; }
+.notification-body > span { color: #b9bdbb; font-size: 13px; line-height: 1.6; }
+.notification-body > span:first-child { font-size: 12px; padding-right: 36px; }
+.notification-body strong { display: flex; align-items: center; gap: 7px; font-size: 15px; padding-right: 30px; }
+#notification-mark { display: flex; align-items: center; height: 24px; }
+.notification-preview[data-kind=waiting] .notification-body > span:first-child { color: #e5bf77; }
+.notification-close { position: absolute; right: 4px; top: 0; width: 44px; height: 44px; border: 0; background: transparent; color: #c3c7c5; font-size: 22px; }
+.notification-close:hover { background: #ffffff15; }
+.demo-hint { margin-top: 16px; color: var(--muted); font-size: 13px; }
+.feature-notification .feature-visual img { width: 100%; height: auto; max-height: 156px; object-fit: contain; }
+@media (max-width: 760px) { .notification-preview { width: 305px; } }
+@media (max-width: 360px) { .notification-preview { width: 264px; } }
+
+.notifying .desktop-note { opacity: 0; }

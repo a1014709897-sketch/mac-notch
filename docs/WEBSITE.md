@@ -52,6 +52,7 @@ ICP filing and domain registration are separate. For non-mainland hosting, an un
 ## Manual website checks
 
 - Desktop and mobile: no horizontal overflow, navigation and typography readable, download/script links work under `/mac-notch/`.
+- Waiting/ended states expand a simulated notification with a session title and question/result. The web preview stays open for reading (explicitly labeled); close/Escape restores the compact status, and opening quota dismisses the notification. Both-tool mode previews one notification at a time. Feature images are copied from the production component previews in `assets/notification-{ended,waiting}.png`.
 - Cycle idle/running/waiting/ended and select the task source. Both enabled tool shortcuts remain visible and independently clickable; only selected tools show the chosen task state.
 - The other tool stays idle when only Claude or Codex has a task. Both tools show three dots when both are running.
 - Double click, or Q while a notch button is focused, opens the simulated quota panel; Escape, close and outside click dismiss it. Verify focus returns to the trigger after Escape.
