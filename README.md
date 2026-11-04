@@ -2,7 +2,7 @@
 
 在 Mac 顶部查看 **Claude Code、Codex 和 WorkBuddy** 的任务状态、订阅额度与本机 Token 用量。仅支持 macOS。
 
-**[产品官网与交互演示](https://a1014709897-sketch.github.io/mac-notch/)** · **[下载](https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.9)**
+**[产品官网与交互演示](https://a1014709897-sketch.github.io/mac-notch/)** · **[下载](https://github.com/a1014709897-sketch/mac-notch/releases/tag/v0.2.10)**
 
 ## 预览
 
@@ -36,7 +36,7 @@
 
 ## 下载
 
-[GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon（arm64）和 Intel（x64）的 DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。v0.2.9 为小范围体验版，使用 ad-hoc 签名，尚未 Apple Developer ID 公证，macOS 可能阻止打开。
+[GitHub Releases](https://github.com/a1014709897-sketch/mac-notch/releases) 提供 Apple Silicon（arm64）和 Intel（x64）的 DMG、应用 ZIP、源码 ZIP 和 SHA-256 校验文件。v0.2.10 为小范围体验版，使用 ad-hoc 签名，尚未 Apple Developer ID 公证，macOS 可能阻止打开。
 
 也可以把这条命令发给有终端权限的 Agent，或在自己的 Mac 终端运行：
 

@@ -1,0 +1,979 @@
+{
+  "ok": true,
+  "dashboardMotionChecks": {
+    "button": true,
+    "escape": true,
+    "reopen": true,
+    "reducedMotion": true,
+    "pointerPassThrough": true
+  },
+  "gestureChecks": [
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "assistanceChecks": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "previewChecks": {
+    "loaded": true,
+    "scrollable": true,
+    "updateVisible": true
+  },
+  "bounds": {
+    "x": 524,
+    "y": 0,
+    "width": 680,
+    "height": 432
+  },
+  "geometry": {
+    "x": 679,
+    "y": 0,
+    "width": 371,
+    "height": 32,
+    "gap": 185,
+    "hardware": true,
+    "centerX": 864,
+    "left": 59,
+    "right": 59,
+    "single": false,
+    "spacer": 197,
+    "outer": 28,
+    "cameraLeft": 92.5
+  },
+  "panelCheck": {
+    "quotaCards": 2,
+    "bars": 24,
+    "width": 680,
+    "height": 432,
+    "overflow": false,
+    "headerBottom": 32,
+    "contentTop": 32
+  },
+  "periodChecks": {
+    "out": [
+      {
+        "period": "day",
+        "label": "今日 Token",
+        "bars": 24,
+        "pressed": "true"
+      },
+      {
+        "period": "week",
+        "label": "本周 Token",
+        "bars": 2,
+        "pressed": "true"
+      },
+      {
+        "period": "month",
+        "label": "本月 Token",
+        "bars": 3,
+        "pressed": "true"
+      }
+    ],
+    "noSettings": true,
+    "noRefresh": true
+  },
+  "dashboardChecks": [
+    {
+      "name": "day",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 3,
+      "footerVisible": true
+    },
+    {
+      "name": "week",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 3,
+      "footerVisible": true
+    },
+    {
+      "name": "month",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 3,
+      "footerVisible": true
+    },
+    {
+      "name": "all-windows",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 5,
+      "footerVisible": true
+    },
+    {
+      "name": "login-needed",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 1,
+      "footerVisible": true
+    },
+    {
+      "name": "cached-quotas",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 5,
+      "footerVisible": true
+    },
+    {
+      "name": "single-provider",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 1,
+      "meters": 1,
+      "footerVisible": true
+    },
+    {
+      "name": "large-total",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 3,
+      "footerVisible": true
+    },
+    {
+      "name": "full-month",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 3,
+      "footerVisible": true
+    },
+    {
+      "name": "loading",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 0,
+      "footerVisible": true
+    },
+    {
+      "name": "workbuddy-codex",
+      "outside": [],
+      "scrollHeight": 400,
+      "clientHeight": 400,
+      "noScroll": true,
+      "fits": true,
+      "providers": 2,
+      "meters": 1,
+      "footerVisible": true
+    }
+  ],
+  "notificationChecks": {
+    "layout": {
+      "visible": true,
+      "belowCamera": true,
+      "bottomFlush": true,
+      "trackHeight": 2,
+      "contentHeight": 82,
+      "gap": "3px",
+      "fonts": [
+        "12px",
+        "15px",
+        "13px"
+      ],
+      "source": "Claude",
+      "title": "通知交互方案已生成",
+      "buttons": 2,
+      "overflow": false
+    },
+    "hoverPaused": true,
+    "fold": {
+      "heldNativeFrame": true,
+      "intermediateContours": true,
+      "headerAlwaysVisible": true,
+      "finishedCompact": true,
+      "interruptedByNewNotification": true,
+      "reducedMotionImmediate": true
+    },
+    "closeKeepsUnread": true,
+    "timeoutKeepsUnread": true,
+    "bodyOpens": true,
+    "longText": true,
+    "dashboardDefers": true,
+    "codexSource": true,
+    "codexClick": true
+  },
+  "notificationToggleChecks": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "foregroundChecks": [
+    {
+      "provider": "claude",
+      "focusAt": "completion",
+      "neverExpanded": true,
+      "hidden": true,
+      "noReplay": true,
+      "otherStillNotifies": true
+    },
+    {
+      "provider": "claude",
+      "focusAt": "presentation",
+      "neverExpanded": true,
+      "hidden": true,
+      "noReplay": true,
+      "otherStillNotifies": true
+    },
+    {
+      "provider": "codex",
+      "focusAt": "completion",
+      "neverExpanded": true,
+      "hidden": true,
+      "noReplay": true,
+      "otherStillNotifies": true
+    },
+    {
+      "provider": "codex",
+      "focusAt": "presentation",
+      "neverExpanded": true,
+      "hidden": true,
+      "noReplay": true,
+      "otherStillNotifies": true
+    }
+  ],
+  "setupCheck": {
+    "switches": 10,
+    "overflow": false,
+    "legacyInputs": 0
+  },
+  "liveSettingsChecks": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "menuChecks": [
+    true,
+    true,
+    true,
+    true
+  ],
+  "idleQuotaCheck": [
+    "98%",
+    "0%"
+  ],
+  "updatedQuotaCheck": [
+    "—",
+    "59%"
+  ],
+  "quotaFitChecks": [
+    {
+      "width": 389,
+      "originalSize": true,
+      "fits": true
+    },
+    {
+      "width": 341,
+      "originalSize": true,
+      "fits": true
+    }
+  ],
+  "switches": [
+    {
+      "expected": 1,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 1,
+      "visible": true
+    },
+    {
+      "expected": 1,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 1,
+      "visible": true
+    },
+    {
+      "expected": 0,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 0,
+      "visible": false
+    },
+    {
+      "expected": 2,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 2,
+      "visible": true
+    },
+    {
+      "expected": 2,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 2,
+      "visible": true
+    },
+    {
+      "expected": 1,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 1,
+      "visible": true
+    },
+    {
+      "expected": 0,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 0,
+      "visible": false
+    },
+    {
+      "expected": 2,
+      "trays": 3,
+      "expectedMenus": 3,
+      "tasks": 2,
+      "visible": true
+    }
+  ],
+  "results": [
+    {
+      "count": 2,
+      "width": 371,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 0,
+      "question": 0,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 284,
+          "right": 306
+        }
+      ],
+      "geometry": {
+        "x": 679,
+        "y": 0,
+        "width": 371,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 59,
+        "right": 59,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 92.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "idle",
+        "idle"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 356,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 3,
+      "question": 0,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 281.9796447753906,
+          "right": 306.44622802734375
+        },
+        {
+          "left": 310,
+          "right": 328
+        }
+      ],
+      "geometry": {
+        "x": 679,
+        "y": 0,
+        "width": 356,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 59,
+        "right": 44,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 92.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "idle",
+        "running"
+      ],
+      "expectedDots": 3,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 346,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 0,
+      "question": 1,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 283.409912109375,
+          "right": 306.1427917480469
+        },
+        {
+          "left": 310,
+          "right": 317.6796875
+        }
+      ],
+      "geometry": {
+        "x": 679,
+        "y": 0,
+        "width": 346,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 59,
+        "right": 34,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 92.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "idle",
+        "waiting"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 351,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 0,
+      "question": 0,
+      "check": 1,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 282.9302673339844,
+          "right": 306.2515563964844
+        },
+        {
+          "left": 310,
+          "right": 323
+        }
+      ],
+      "geometry": {
+        "x": 679,
+        "y": 0,
+        "width": 351,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 59,
+        "right": 39,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 92.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "idle",
+        "ended"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 341,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 6,
+      "question": 0,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 54,
+          "right": 72
+        },
+        {
+          "left": 267.1946716308594,
+          "right": 291.4047546386719
+        },
+        {
+          "left": 295,
+          "right": 313
+        }
+      ],
+      "geometry": {
+        "x": 694,
+        "y": 0,
+        "width": 341,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 44,
+        "right": 44,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 77.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "running",
+        "running"
+      ],
+      "expectedDots": 6,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 331,
+      "height": 32,
+      "overflow": false,
+      "progress": [],
+      "dots": 3,
+      "question": 1,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 54,
+          "right": 61.6796875
+        },
+        {
+          "left": 258.9780578613281,
+          "right": 281.0882263183594
+        },
+        {
+          "left": 285,
+          "right": 303
+        }
+      ],
+      "geometry": {
+        "x": 704,
+        "y": 0,
+        "width": 331,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 34,
+        "right": 44,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 67.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": []
+      },
+      "states": [
+        "waiting",
+        "running"
+      ],
+      "expectedDots": 3,
+      "expectedProgress": []
+    },
+    {
+      "count": 2,
+      "width": 364,
+      "height": 32,
+      "overflow": false,
+      "progress": [
+        "1/3"
+      ],
+      "dots": 0,
+      "question": 0,
+      "check": 0,
+      "regions": [
+        {
+          "left": 26.803176879882812,
+          "right": 50.27925109863281
+        },
+        {
+          "left": 278.58111572265625,
+          "right": 304.6744384765625
+        },
+        {
+          "left": 310,
+          "right": 335.1796875
+        },
+        {
+          "left": 310,
+          "right": 335.1796875
+        }
+      ],
+      "geometry": {
+        "x": 679,
+        "y": 0,
+        "width": 364,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 59,
+        "right": 52,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 92.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": [
+          "15px"
+        ]
+      },
+      "states": [
+        "idle",
+        "running"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": [
+        "1/3"
+      ]
+    },
+    {
+      "count": 2,
+      "width": 339,
+      "height": 32,
+      "overflow": false,
+      "progress": [
+        "2/3"
+      ],
+      "dots": 0,
+      "question": 1,
+      "check": 0,
+      "regions": [
+        {
+          "left": 28,
+          "right": 50
+        },
+        {
+          "left": 54,
+          "right": 61.6796875
+        },
+        {
+          "left": 253.58111572265625,
+          "right": 279.6744384765625
+        },
+        {
+          "left": 285,
+          "right": 310.1796875
+        },
+        {
+          "left": 285,
+          "right": 310.1796875
+        }
+      ],
+      "geometry": {
+        "x": 704,
+        "y": 0,
+        "width": 339,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 34,
+        "right": 52,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 67.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": [
+          "15px"
+        ]
+      },
+      "states": [
+        "waiting",
+        "running"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": [
+        "2/3"
+      ]
+    },
+    {
+      "count": 2,
+      "width": 413,
+      "height": 32,
+      "overflow": false,
+      "progress": [
+        "12/128",
+        "99/128"
+      ],
+      "dots": 0,
+      "question": 0,
+      "check": 0,
+      "regions": [
+        {
+          "left": 26.270904541015625,
+          "right": 48.270904541015625
+        },
+        {
+          "left": 54,
+          "right": 107.4375
+        },
+        {
+          "left": 54,
+          "right": 107.4375
+        },
+        {
+          "left": 299.58111572265625,
+          "right": 325.6744384765625
+        },
+        {
+          "left": 331,
+          "right": 384.4375
+        },
+        {
+          "left": 331,
+          "right": 384.4375
+        }
+      ],
+      "geometry": {
+        "x": 658,
+        "y": 0,
+        "width": 413,
+        "height": 32,
+        "gap": 185,
+        "hardware": true,
+        "centerX": 864,
+        "left": 80,
+        "right": 80,
+        "single": false,
+        "spacer": 197,
+        "outer": 28,
+        "cameraLeft": 113.5
+      },
+      "sizing": {
+        "icons": [
+          {
+            "provider": "claude",
+            "width": "22px",
+            "padding": "0px"
+          },
+          {
+            "provider": "codex",
+            "width": "22px",
+            "padding": "0px"
+          }
+        ],
+        "fonts": [
+          "15px",
+          "15px"
+        ]
+      },
+      "states": [
+        "running",
+        "running"
+      ],
+      "expectedDots": 0,
+      "expectedProgress": [
+        "12/128",
+        "99/128"
+      ]
+    }
+  ]
+}

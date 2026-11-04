@@ -32,13 +32,6 @@
  }
  function drawFace(item,t){
   const {canvas,provider,state}=item,c=canvas.getContext('2d');
-  c.clearRect(0,0,160,160);c.save();c.scale(1.6,1.6);
-  const body=bodyImage(provider);
-  const width=provider==='claude'?92:78, height=width*body.height/body.width;
-  c.drawImage(body.canvas,body.left,body.top,body.width,body.height,(100-width)/2,(100-height)/2,width,height);
-  c.save();
-  c.translate(50,54);c.scale(provider==='claude'?1:1.3,provider==='claude'?1:1.3);c.translate(-50,-54);
-  const ink=provider==='workbuddy'?'#f3fff9':'#202137';c.fillStyle=ink;c.strokeStyle=ink;
   let y=provider==='claude'?43:provider==='workbuddy'?60:54;
   const center=provider==='workbuddy'?54:50,space=16;
   let gaze=0,expression='open',blink=1,squeeze=0;
@@ -49,6 +42,24 @@
   if(state==='waiting'){expression='attention';gaze=0;y-=1;}
   if(state==='done'){expression='proud';gaze=0;y-=3;}
   if(state==='multi'){const eventTime=t-item.eventAt;expression=eventTime<1.25?'shock':'focus';gaze=eventTime<1.25?0:Math.sin(t*3)*4;}
+  // Subpixel eye drift must not upload an identical-looking texture 24 times/s.
+  // Half a design unit is 0.11 CSS pixels in the fixed 22px icon. Expression,
+  // blinking, attention rays and the new-task flourish retain their own keys.
+  const q = value => Math.round(value * 2);
+  const blinkKey = provider === 'codex' || expression === 'squint' || expression === 'shock' ? 0 : Math.round(blink * 20);
+  const attention = state === 'waiting' && provider !== 'codex' ? Math.round(Math.max(0, Math.sin((t%4.6)*Math.PI/1.25))*20) : 0;
+  const rays = state === 'waiting' && t%4.6<1.25 ? Math.round(Math.sin((t%4.6)/1.25*Math.PI)*20) : 0;
+  const flourish = state === 'multi' ? Math.min(30,Math.floor((t-item.eventAt)*24)) : 0;
+  const key = [canvas.width,canvas.height,expression,q(gaze),blinkKey,provider === 'codex' ? 0 : Math.round(squeeze*20),attention,rays,flourish].join(':');
+  if (item.faceKey === key) return;
+  item.faceKey = key;
+  c.clearRect(0,0,canvas.width,canvas.height);c.save();c.scale(canvas.width/100,canvas.height/100);
+  const body=bodyImage(provider);
+  const width=provider==='claude'?92:78, height=width*body.height/body.width;
+  c.drawImage(body.canvas,body.left,body.top,body.width,body.height,(100-width)/2,(100-height)/2,width,height);
+  c.save();
+  c.translate(50,54);c.scale(provider==='claude'?1:1.3,provider==='claude'?1:1.3);c.translate(-50,-54);
+  const ink=provider==='workbuddy'?'#f3fff9':'#202137';c.fillStyle=ink;c.strokeStyle=ink;
   const xs=[center-space+gaze,center+space+gaze];
   const terminal = provider==='codex';
   if(terminal){
@@ -91,6 +102,49 @@
  const origin = performance.now();
  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
  let timer = null;
+ // Keep the approved motion at 24 fps, but stop scheduling when not visible.
+ function schedule() {
+   if (!timer && !document.hidden && !reduced.matches &&
+       [...canvases.values()].some(item => item.provider !== 'codex' || item.state !== 'done'))
+     timer = setTimeout(tick, 1000/24);
+ }
+ function stop() { clearTimeout(timer); timer = null; }
+ // One 24fps clock drives the face and repeating decorative motion together.
+ // Leave finite completion and panel/notification transitions on their original
+ // compositor timelines. Never turn the entire window down to 24fps.
+ function bindMotion(item) {
+   if (reduced.matches || !item.canvas.isConnected) return;
+   item.motion = [];
+   if(item.state !== 'done') for(const animation of item.canvas.getAnimations()) {
+     animation.pause();item.motion.push({animation, mascot:true});
+   }
+   for(const dot of item.canvas.parentElement?.querySelectorAll('.dots i') || [])
+     for(const animation of dot.getAnimations()) {
+       const offset=animation.currentTime || 0;
+       animation.pause();item.motion.push({animation,at:time(),offset});
+     }
+   if(!document.hidden)animate(item,time());
+ }
+ function animate(item,t) {
+   for(const motion of item.motion || []) {
+     let position;
+     if(motion.mascot) {
+       let elapsed=(t-item.eventAt)*1000;
+       // These boundaries are the final non-moving keyframes in mascots.css.
+       if(item.state==='idle') {
+         const active={claude:980,codex:1120,workbuddy:1260}[item.provider];
+         const cycle=Math.floor(elapsed/7000);
+         elapsed=cycle*7000+Math.min(elapsed%7000,active);
+       }
+       position=elapsed-item.cssOffset;
+     } else position=(t-motion.at)*1000+motion.offset;
+     if(motion.position!==position) {
+       motion.animation.currentTime=position;
+       motion.position=position;
+     }
+   }
+ }
+ function dispose(item) { if(item) clearTimeout(item.bindTimer); }
  const time = () => (performance.now() - origin) / 1000;
  function pose(task) {
    if (task.state === 'ended') return 'done';
@@ -99,13 +153,17 @@
    return task.state;
  }
  function tick() {
+   timer = null;
    if (document.hidden) return;
    const t = time();
    for (const [provider,item] of canvases) {
-     if (!item.canvas.isConnected) { canvases.delete(provider); continue; }
-     drawFace(item, reduced.matches ? item.eventAt + 2 : t);
+     if (!item.canvas.isConnected) { dispose(item); canvases.delete(provider); continue; }
+     animate(item,t);
+     // Codex's completed face has no blinking or moving geometry.
+     if (item.provider !== 'codex' || item.state !== 'done')
+       drawFace(item, reduced.matches ? item.eventAt + 2 : t);
    }
-   if (!canvases.size) { clearInterval(timer); timer = null; }
+   schedule();
  }
  window.createNotchMascot = task => {
    const state = pose(task), now = time(), total = task.progress?.total || 0;
@@ -114,20 +172,56 @@
      epoch = {state, total, at:now}; epochs.set(task.provider,epoch);
    } else epoch.total = total;
    const canvas = document.createElement('canvas');
-   canvas.className = 'logo mascot'; canvas.width = canvas.height = 160;
+   canvas.className = 'logo mascot';
+   // Render at the physical size of the 22px slot instead of a fixed 160px.
+   canvas.width = canvas.height = Math.ceil(22 * (window.devicePixelRatio || 1));
    canvas.alt = task.provider; canvas.dataset.pose = state;
    canvas.setAttribute('aria-hidden','true');
    canvas.style.animationDelay = `${-(now - epoch.at)}s`;
-   const item = {canvas, provider:task.provider, state, eventAt:epoch.at};
+   const item = {canvas, provider:task.provider, state, eventAt:epoch.at, cssOffset:(now-epoch.at)*1000};
+   if (canvases.has(task.provider)) dispose(canvases.get(task.provider));
    canvases.set(task.provider,item); drawFace(item,reduced.matches ? epoch.at + 2 : now);
-   if (!timer && !reduced.matches) timer=setInterval(tick, 1000/24);
+   schedule();
+   item.bindTimer = setTimeout(() => bindMotion(item), 0);
    return canvas;
  };
  window.retainNotchMascots = providers => {
-   for(const provider of epochs.keys()) if(!providers.includes(provider)) {epochs.delete(provider);canvases.delete(provider);}
-   if(!canvases.size){clearInterval(timer);timer=null;}
+   for(const provider of epochs.keys()) if(!providers.includes(provider)) {epochs.delete(provider);dispose(canvases.get(provider));canvases.delete(provider);}
+   if(!canvases.size)stop();
  };
- reduced.addEventListener('change',()=>{clearInterval(timer);timer=null;tick();if(!reduced.matches&&canvases.size)timer=setInterval(tick,1000/24);});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
- window.addEventListener('pagehide',()=>{clearInterval(timer);timer=null;canvases.clear();epochs.clear();});
+ reduced.addEventListener('change',()=>{
+   stop();
+   for (const item of canvases.values()) {
+     dispose(item);
+     drawFace(item, reduced.matches ? item.eventAt + 2 : time());
+     bindMotion(item);
+   }
+   schedule();
+ });
+ document.addEventListener('visibilitychange',()=>{
+   stop();
+   for(const item of canvases.values()) {
+     dispose(item);
+     if(document.hidden) {
+       item.hiddenAnimations = item.canvas.getAnimations().filter(animation => animation.playState === 'running');
+       for(const animation of item.hiddenAnimations) animation.pause();
+     } else {
+       if(!reduced.matches) for(const animation of item.hiddenAnimations || []) animation.play();
+       item.hiddenAnimations = [];
+     }
+     if(!document.hidden) {
+       if(!item.motion)bindMotion(item);
+       animate(item,time());
+     }
+   }
+   if(!document.hidden)tick();
+ });
+ window.addEventListener('resize',()=>{
+   const size=Math.ceil(22*(window.devicePixelRatio||1));
+   for(const item of canvases.values())if(item.canvas.width!==size){
+     item.canvas.width=item.canvas.height=size;
+     drawFace(item,reduced.matches?item.eventAt+2:time());
+   }
+ });
+ window.addEventListener('pagehide',()=>{stop();for(const item of canvases.values())dispose(item);canvases.clear();epochs.clear();});
 })();

@@ -6,13 +6,13 @@ const vm = require("node:vm");
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function harness() {
   const settings = {providers:{claude:true,codex:true}, menuBar:{claude:true,codex:true}, idleQuota:false,startAtLogin:false,notifications:true};
-  const controls = Object.fromEntries(["workbuddy-login","workbuddy-cancel","workbuddy-login-status","workbuddy","menu-workbuddy","assistance-notifications","swap-gestures","gesture-description","gesture-feedback","check-update","download-update","open-update","notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
+  const controls = Object.fromEntries(["close-settings","workbuddy-login","workbuddy-cancel","workbuddy-login-status","workbuddy","menu-workbuddy","assistance-notifications","swap-gestures","gesture-description","gesture-feedback","check-update","download-update","open-update","notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
   const requests = [];
   let onState, logins=0;
   const context = vm.createContext({document:{getElementById:id=>controls[id],querySelectorAll:()=>[]}, macNotch:{
     get:async()=>({settings:structuredClone(settings),version:"test"}),
     workbuddyLogin:async()=>{logins++;return {ok:true};},workbuddyCancel:async()=>true,
-    onState:callback=>{onState=callback;},onNotice:()=>{},quit:()=>{},
+    onState:callback=>{onState=callback;},onNotice:()=>{},quit:()=>{},closeSettings:()=>{},
     save:patch=>new Promise((resolve,reject)=>requests.push({patch:JSON.parse(JSON.stringify(patch)),resolve,reject})),
   }});
   vm.runInContext(fs.readFileSync(require.resolve("../src/renderer/panel.js"),"utf8"),context);

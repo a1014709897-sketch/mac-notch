@@ -9,99 +9,164 @@
     <title>Mac Notch · 设置</title>
     <link rel="stylesheet" href="panel.css" />
   </head>
-  <body>
-    <div class="titlebar"></div>
-    <main>
-      <h1>选择你的 AI 工具</h1>
-      <p class="intro">最多同时开启 2 个 AI 工具；切换工具前先关闭其中一个，修改后立即生效。</p>
-      <form id="settings">
-        <label class="provider"
-          ><img src="../../assets/claude.svg" alt="" /><span
-            ><b>Claude Code</b><small>任务状态与订阅额度</small></span
-          ><input
-            id="claude"
-            type="checkbox"
-            role="switch"
-            aria-label="开启 Claude Code" /><i></i
-        ></label>
-        <label class="provider"
-          ><img src="../../assets/codex.svg" alt="" /><span
-            ><b>Codex</b><small>任务状态与订阅额度</small></span
-          ><input
-            id="codex"
-            type="checkbox"
-            role="switch"
-            aria-label="开启 Codex" /><i></i
-        ></label>
-        <label class="provider"><img src="../../assets/workbuddy.svg" alt="" /><span><b>WorkBuddy</b><small>任务状态与本机用量</small></span><input id="workbuddy" type="checkbox" role="switch" aria-label="开启 WorkBuddy" /><i></i></label>
-        <div class="workbuddy-login">
-          <small>首次开启需完成网页授权，用于读取剩余额度；未完成授权不影响任务状态显示。</small>
-          <div><button id="workbuddy-login" type="button" class="secondary">重新登录 WorkBuddy</button> <button id="workbuddy-cancel" type="button" class="secondary" hidden>取消授权</button></div>
-          <small id="workbuddy-login-status" role="status"></small>
-        </div>
-        <fieldset class="display-settings notification-settings">
-          <legend>通知</legend>
-          <article class="notification-option">
-            <label><input id="assistance-notifications" type="checkbox" role="switch" checked /> 需要协助通知</label>
-            <small>新问题出现时提醒一次；关闭通知不会清除待处理状态。</small>
-            <img src="../../assets/notification-waiting.png" alt="协助通知效果：会话标题后显示问号，正文显示待回答问题。" />
-            <button type="button" class="secondary" data-preview="waiting">预览协助通知</button>
-          </article>
-          <article class="notification-option">
-            <label><input id="notifications" type="checkbox" role="switch" checked /> 任务完成通知</label>
-            <small>本轮任务完成时提醒；关闭后保留刘海完成状态。</small>
-            <img src="../../assets/notification-ended.png" alt="完成通知效果：会话标题后显示完成勾，正文显示本轮结果。" />
-            <button type="button" class="secondary" data-preview="ended">预览完成通知</button>
-          </article>
-        </fieldset>
-        <fieldset class="display-settings">
-          <legend>显示方式</legend>
-          <label><input id="idle-quota" type="checkbox" role="switch" checked /> 刘海条空闲时显示剩余额度</label>
-          <small>图标＋剩余百分比；有任务时优先显示任务状态。</small>
-          <div class="quota-comparison" aria-label="空闲额度显示前后对比">
-            <figure><figcaption>关闭 · 只显示工具图标</figcaption><img src="../../assets/idle-quota-off.png" alt="关闭后：空闲刘海条仅显示 Claude 和 Codex 图标。" /></figure>
-            <figure><figcaption>开启 · 显示剩余额度</figcaption><img src="../../assets/idle-quota-on.png" alt="开启后：工具图标旁显示演示剩余额度 72% 和 59%。" /></figure>
-            <p>示意额度，实际数值以账号查询结果为准。</p>
-          </div>
-          <label><input id="menu-claude" type="checkbox" role="switch" /> 菜单栏显示 Claude</label>
-          <label><input id="menu-codex" type="checkbox" role="switch" /> 菜单栏显示 Codex</label>
-          <label><input id="menu-workbuddy" type="checkbox" role="switch" /> 菜单栏显示 WorkBuddy</label>
-          <small>菜单栏可同时显示三个工具，与刘海条开关独立；打开 Mac Notch 应用可返回设置。</small>
-          <figure class="menu-bar-preview">
-            <img src="../../assets/menu-bar-preview.svg" alt="屏幕右上角菜单栏示意：Claude 72%、Codex 59%、WorkBuddy 99%，位于 Wi-Fi、电池和时间左侧。" />
-            <figcaption>右上角菜单栏效果示意；额度与排列位置以实际显示为准。</figcaption>
-          </figure>
-        </fieldset>
-        <fieldset class="display-settings">
-          <legend>刘海条操作</legend>
-          <p class="hint" id="gesture-description">右击打开控制页，双击查看用量与额度。</p>
-          <label><input id="swap-gestures" type="checkbox" role="switch" /> 交换右击与双击</label>
-          <small id="gesture-feedback" role="status">两项操作会一起交换，避免手势冲突。单击始终打开工具。</small>
-        </fieldset>
-        <label class="login"
-          ><input id="login" type="checkbox" /> 登录时启动</label
-        >
-        <p class="hint">
-          没有获取 Claude 状态？运行
-          Claude Code CLI（<code>claude</code>），完成订阅账号登录后刷新。
-        </p>
-        <p id="notice" role="status"></p>
-      </form>
-      <section class="update-settings" aria-label="版本更新">
-        <b>版本更新</b>
-        <p id="update-status" role="status">手动检查 Mac Notch 新版本。</p>
-        <div class="update-actions">
-          <button type="button" class="secondary" id="check-update">检查更新</button>
-          <button type="button" class="secondary" id="download-update" hidden>下载安装包</button>
-          <button type="button" class="secondary" id="open-update" hidden>打开安装包</button>
-        </div>
-        <progress id="update-progress" max="100" value="0" hidden aria-label="安装包下载进度"></progress>
-        <details id="release-notes" hidden><summary>更新说明</summary><p id="release-notes-text"></p></details>
-      </section>
-      <footer>
-        <span id="version"></span><button id="quit">退出 Mac Notch</button>
-      </footer>
-    </main>
-    <script src="panel.js"></script>
-  </body>
+<body>
+<div class="titlebar">
+<button id="close-settings" type="button" aria-label="关闭控制页">×</button>
+</div>
+<main>
+<form id="settings">
+<section class="settings-section">
+<header>
+<h1>AI 工具管理</h1><p class="intro">管理可用的 AI 工具、通知与显示方式，按你的使用习惯自定义体验。</p>
+<p class="tool-limit">最多同时开启 2 个工具 ⓘ</p>
+</header>
+<label class="setting-row provider">
+<img class="tool-icon" src="../../assets/claude.svg" alt="" />
+<span class="setting-copy">
+<b>Claude Code</b>
+<small>任务状态与订阅额度</small>
+</span>
+<input id="claude" type="checkbox" role="switch" aria-label="Claude Code" />
+</label>
+<label class="setting-row provider">
+<img class="tool-icon" src="../../assets/codex.svg" alt="" />
+<span class="setting-copy">
+<b>Codex</b>
+<small>任务状态与订阅额度</small>
+</span>
+<input id="codex" type="checkbox" role="switch" aria-label="Codex" />
+</label>
+<label class="setting-row provider">
+<img class="tool-icon" src="../../assets/workbuddy.svg" alt="" />
+<span class="setting-copy">
+<b>WorkBuddy</b>
+<small>任务状态与本机用量</small>
+</span>
+<input id="workbuddy" type="checkbox" role="switch" aria-label="WorkBuddy" />
+</label>
+<div class="tool-footer">
+<label class="setting-row login-row"><input id="login" class="box" type="checkbox" role="switch" aria-label="登录时启动" /><span class="setting-copy">登录时启动</span></label>
+<div class="workbuddy-login"><button id="workbuddy-login" type="button" class="text-button">重新登录 WorkBuddy</button><button id="workbuddy-cancel" type="button" class="secondary" hidden>取消授权</button></div>
+<small id="workbuddy-login-status" role="status"></small>
+</div>
+</section>
+<section class="settings-section notification-settings">
+<h2>通知管理</h2><p class="section-intro">设置任务过程中的通知提醒方式。</p><span class="notification-caption">通知效果示意</span>
+<article class="notification-option">
+<label class="setting-row">
+<span class="setting-copy">
+<b>需要协助通知</b>
+<small>新问题出现时提醒一次；关闭通知不会清除待处理状态。</small>
+</span>
+<input id="assistance-notifications" type="checkbox" role="switch" aria-label="需要协助通知" />
+</label>
+<figure>
+<img src="../../assets/notification-waiting.png" alt="需要协助通知效果示意" />
+</figure>
+</article>
+<article class="notification-option">
+<label class="setting-row">
+<span class="setting-copy">
+<b>任务完成通知</b>
+<small>本轮任务完成时提醒；关闭后保留刘海完成状态。</small>
+</span>
+<input id="notifications" type="checkbox" role="switch" aria-label="任务完成通知" />
+</label>
+<figure>
+<img src="../../assets/notification-ended.png" alt="任务完成通知效果示意" />
+</figure>
+</article>
+</section>
+<section class="settings-section quota-section">
+<h2>刘海条额度显示</h2>
+<label class="setting-row">
+<span class="setting-copy">
+<b>空闲时显示剩余额度</b>
+<small>有任务时优先显示任务状态 · 示意数据</small>
+</span>
+<input id="idle-quota" type="checkbox" role="switch" aria-label="空闲时显示剩余额度" />
+</label>
+<div class="quota-comparison">
+<figure>
+<figcaption>关闭</figcaption>
+<img src="../../assets/idle-quota-mini-off.png" alt="关闭时仅显示工具图标" />
+</figure>
+<span aria-hidden="true">→</span>
+<figure>
+<figcaption>开启</figcaption>
+<img src="../../assets/idle-quota-mini-on.png" alt="开启时显示工具图标和剩余额度" />
+</figure>
+</div>
+</section>
+<section class="settings-section menu-section">
+<h2>菜单栏显示</h2>
+<label class="setting-row">
+<span class="setting-copy">
+<b>显示 Claude 额度</b>
+</span>
+<input class="box" id="menu-claude" type="checkbox" role="switch" aria-label="显示 Claude 额度" />
+</label>
+<label class="setting-row">
+<span class="setting-copy">
+<b>显示 Codex 额度</b>
+</span>
+<input class="box" id="menu-codex" type="checkbox" role="switch" aria-label="显示 Codex 额度" />
+</label>
+<label class="setting-row">
+<span class="setting-copy">
+<b>显示 WorkBuddy 额度</b>
+</span>
+<input class="box" id="menu-workbuddy" type="checkbox" role="switch" aria-label="显示 WorkBuddy 额度" />
+</label>
+<figure class="menu-bar-preview">
+<img src="../../assets/menu-bar-inline.svg" alt="屏幕右上角菜单栏：各工具剩余额度、Wi-Fi、电池与时间" />
+</figure>
+</section>
+<section class="settings-section usage-section">
+<h2>用量额度明细</h2>
+<p id="gesture-description">右击刘海条打开控制页，双击查看用量额度明细。</p>
+<label class="setting-row">
+<span class="setting-copy">
+<b>交换右击与双击</b>
+</span>
+<input id="swap-gestures" type="checkbox" role="switch" aria-label="交换右击与双击" />
+</label>
+<small id="gesture-feedback" role="status">单击始终打开工具。</small>
+<figure class="usage-details-preview">
+<img src="../../assets/usage-details-preview.png" alt="用量额度明细示意：Token 用量、趋势、费用估算及订阅剩余额度" />
+</figure>
+</section>
+
+<p id="notice" role="status">
+</p>
+</form>
+<section class="settings-section update-settings" aria-label="版本更新">
+<div class="setting-row">
+<div class="setting-copy">
+<h2>版本更新</h2>
+<span id="version">
+</span>
+<p id="update-status" role="status">手动检查 Mac Notch 新版本。</p>
+</div>
+<div class="actions update-actions">
+<button type="button" class="secondary" id="check-update">检查更新</button>
+<button type="button" class="secondary" id="download-update" hidden>下载安装包</button>
+<button type="button" class="secondary" id="open-update" hidden>打开安装包</button>
+</div>
+</div>
+<progress id="update-progress" max="100" value="0" hidden aria-label="安装包下载进度">
+</progress>
+<details id="release-notes" hidden>
+<summary>更新说明</summary>
+<p id="release-notes-text">
+</p>
+</details>
+</section>
+<footer>
+<button id="quit" class="text-button">退出 Mac Notch</button>
+</footer>
+</main>
+<script src="panel.js">
+</script>
+</body>
 </html>

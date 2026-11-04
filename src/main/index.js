@@ -517,10 +517,10 @@ app.whenReady().then(async () => {
   notch.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   protect(notch);
   panel = new BrowserWindow({
-    width: Math.min(520, screen.getPrimaryDisplay().workArea.width - 32),
-    height: Math.min(820, screen.getPrimaryDisplay().workArea.height - 32),
+    width: Math.min(900, screen.getPrimaryDisplay().workArea.width - 32, screen.getPrimaryDisplay().workArea.height - 32),
+    height: Math.min(900, screen.getPrimaryDisplay().workArea.width - 32, screen.getPrimaryDisplay().workArea.height - 32),
     show: false,
-    titleBarStyle: "hiddenInset",
+    frame: false,
     title: "Mac Notch · 设置",
     resizable: false,
     minimizable: false,

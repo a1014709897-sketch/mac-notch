@@ -448,7 +448,7 @@ module.exports = async function smoke({
     panel.show();
     await wait();
     const setupCheck = await panel.webContents.executeJavaScript(
-      `({switches:document.querySelectorAll('[role=switch]').length,overflow:document.documentElement.scrollHeight>innerHeight,legacyInputs:document.querySelectorAll('#proxy,#cookie').length})`,
+      `({switches:document.querySelectorAll('[role=switch]').length,overflow:document.documentElement.scrollHeight>innerHeight,legacyInputs:document.querySelectorAll('#proxy,#cookie').length,referenceLayout:(()=>{const sections=[...document.querySelectorAll('.settings-section')];const titles=sections.map(s=>s.querySelector('h1,h2')?.textContent);const images=[...document.querySelectorAll('main img')];return titles.join('|')==='AI 工具管理|通知管理|刘海条额度显示|菜单栏显示|用量额度明细|版本更新'&&images.every(i=>i.complete&&i.naturalWidth>0)&&!document.querySelector('[data-preview]')&&document.querySelector('main').scrollWidth<=document.querySelector('main').clientWidth;})()})`,
     );
     if (out)
       fs.writeFileSync(
@@ -462,6 +462,7 @@ module.exports = async function smoke({
     }
     const notificationToggleChecks = [];
     notificationToggleChecks.push(store.public().notifications === true);
+    setupCheck.square = panel.getBounds().width === panel.getBounds().height;
     const visibleTask = presentNotification("通知开关测试", "codex"); await wait();
     notificationToggleChecks.push(Boolean(notifications.current));
     await changeSetting("notifications", false);
@@ -538,7 +539,7 @@ module.exports = async function smoke({
       previewChecks.updateVisible = await panel.webContents.executeJavaScript(`document.querySelector('#check-update').getBoundingClientRect().bottom <= innerHeight`);
       fs.writeFileSync(path.join(out,"settings-bottom.png"),(await panel.webContents.capturePage()).toPNG());
     }
-    await panel.webContents.executeJavaScript(`document.querySelector('[data-preview="waiting"]').click()`); await wait();
+    await panel.webContents.executeJavaScript(`macNotch.previewNotification('waiting')`); await wait();
     assistanceChecks.push(notifications.current?.preview === true);
     await notch.webContents.executeJavaScript(`document.querySelector('#notification-body').click()`); await wait();
     assistanceChecks.push(!notifications.current && state.sessions.size === 0);
@@ -621,7 +622,7 @@ module.exports = async function smoke({
       panelCheck.bars === 24 &&
       !panelCheck.overflow &&
       panelCheck.contentTop >= panelCheck.headerBottom &&
-      setupCheck.switches === 10 &&
+      setupCheck.switches === 11 && setupCheck.referenceLayout && setupCheck.square &&
       !setupCheck.overflow &&
       !setupCheck.legacyInputs &&
       switches.every(
