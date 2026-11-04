@@ -28,17 +28,18 @@ test("provider preferences persist independently and migrate existing settings",
       JSON.stringify({ startAtLogin: true, proxy: "http://127.0.0.1:7890" }),
     );
     const store = createStore(dir, {});
-    assert.deepEqual(store.public().providers, { claude: true, codex: true });
+    assert.deepEqual(store.public().providers, { claude: true, codex: true, workbuddy: false });
     assert.equal(store.public().setupComplete, false);
     store.update({ providers: { claude: false }, setupComplete: true });
     assert.deepEqual(createStore(dir, {}).public().providers, {
       claude: false,
       codex: true,
+      workbuddy: false,
     });
     assert.equal(store.public().proxy, "http://127.0.0.1:7890");
     assert.equal(store.public().setupComplete, true);
     store.update({ providers: { codex: false } });
-    assert.deepEqual(store.public().providers, { claude: false, codex: false });
+    assert.deepEqual(store.public().providers, { claude: false, codex: false, workbuddy: false });
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -49,15 +50,15 @@ test('display preferences migrate, persist independently, and reject non-boolean
   t.after(() => fs.rmSync(dir, {recursive:true,force:true}));
   const store = createStore(dir, {});
   assert.equal(store.public().idleQuota, true);
-  assert.deepEqual(store.public().menuBar, {claude:true,codex:true});
+  assert.deepEqual(store.public().menuBar, {claude:true,codex:true,workbuddy:true});
   store.update({idleQuota:true, menuBar:{claude:false}});
   const reopened = createStore(dir, {});
   assert.equal(reopened.public().idleQuota, true);
-  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:true});
-  assert.deepEqual(reopened.public().providers, {claude:true,codex:true});
+  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:true,workbuddy:true});
+  assert.deepEqual(reopened.public().providers, {claude:true,codex:true,workbuddy:false});
   reopened.update({idleQuota:'false',menuBar:{codex:false}});
   assert.equal(reopened.public().idleQuota, true);
-  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:false});
+  assert.deepEqual(reopened.public().menuBar, {claude:false,codex:false,workbuddy:true});
 });
 
 test('notifications default on for new and legacy settings and persist an explicit off', t => {
@@ -87,4 +88,18 @@ test('new defaults preserve old explicit choices, migrate muted notices and pers
   store.update({assistanceNotifications:true,swapGestures:true});
   const saved = createStore(dir, {}).public();
   assert.equal(saved.swapGestures,true); assert.equal(saved.assistanceNotifications,true); assert.equal(saved.notifications,false);
+});
+
+test('WorkBuddy is opt-in; a third provider is rejected atomically; pairs and all-off survive reopen', t => {
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'notch-provider-limit-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const store=createStore(dir,{});
+  assert.equal(store.public().providers.workbuddy,false);
+  assert.throws(()=>store.update({providers:{workbuddy:true}}),/最多.*2/);
+  assert.equal(store.public().providers.workbuddy,false);
+  for(const providers of [{claude:false,codex:true,workbuddy:true},{claude:true,codex:false,workbuddy:true},{claude:false,codex:false,workbuddy:true},{claude:false,codex:false,workbuddy:false}]) {
+    store.update({providers});assert.deepEqual(createStore(dir,{}).public().providers,providers);
+  }
+  fs.writeFileSync(path.join(dir,'settings.json'),JSON.stringify({providers:{claude:true,codex:true,workbuddy:true}}));
+  assert.deepEqual(createStore(dir,{}).public().providers,{claude:true,codex:true,workbuddy:false});
 });

@@ -51,7 +51,7 @@ test("multiple sessions prioritize waiting and acknowledgement does not hide new
   );
   assert.deepEqual(
     s.snapshot().map((r) => r.state),
-    ["running", "waiting"],
+    ["running", "waiting", "idle"],
   );
   s.update([row("ended"), row("running", { id: "b" })], 200);
   s.acknowledge("codex", "a");

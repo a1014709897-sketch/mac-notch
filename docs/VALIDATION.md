@@ -167,3 +167,28 @@
 - 调整采样后重新打包，两套最终发布应用完整 `--smoke` 均返回 `ok: true`；按钮、Escape、中途重开、减少动态效果和透明区域穿透全部通过。每套包内 24 个 main/renderer 文件与工作区源码一致，Electron/Koffi 架构、ad-hoc 签名完整性及 FFI 加载检查通过。
 - 最终安装脚本固定 arm64/x64 ZIP 的 SHA-256；15 项 installer 回归通过，网站经过内容哈希构建。完整烟测证据位于 `/tmp/mac-notch-v025-final-arm64.log` 和 `/tmp/mac-notch-v025-final-x64.log`，逐帧记录在同名无扩展名目录。
 - Intel 运行验证使用 Rosetta，不等于 Intel 真机验收；其他 Mac 型号、多屏热插拔和全屏组合仍未覆盖。独立应用烟测使用隔离配置并已退出，没有替换日用 Token Monitor 或开启独立 Mac Notch 常驻实例。
+
+## 2026-11-03 WorkBuddy 与确认版表情安装验收
+
+- `npm run verify`：104 项通过。新增覆盖 WorkBuddy 新旧目录、工具调用问题关联、完成历史基线、Token 去重/未定价、第三工具原子拒绝及持久化。
+- 源码与 `/Applications/Mac Notch.app` 均运行隔离 `--smoke`，`ok=true`。三组双工具组合、单工具、全部关闭、第三工具开启失败回滚和用量布局通过。
+- arm64 unpacked 构建通过；Electron/Koffi 架构、签名完整性及原生 FFI 实际加载通过。未公证，未发布远端 Release，未覆盖 Intel 真机。
+- 确认版 Canvas 表情使用固定 22px 布局；额度刷新保持动效时间，不重播完成。安装包中的 mascots.js/css、notch.js、workbuddy.js、state.js 与图标均核对 SHA-256 对应源码。
+- 已替换 `/Applications/Mac Notch.app`，旧应用与设置备份在 `~/Library/Application Support/Mac Notch/backups/20261103-185440-workbuddy-mascots/`。原有 Claude/Codex 选择保留，WorkBuddy 默认关闭。
+- 本机 WorkBuddy 登录字段检测为 encrypted，额度明确不可读。未用新的真实 WorkBuddy 任务走完运行/协助/完成流程；这些状态使用合成记录和实窗回归验证。
+
+Codex 小尺寸修正：Canvas 图标移除旧 SVG 的 3px padding，保持 22px 盒；五官围绕面部中心放大 1.3 倍。用于修正重复留白及眼睛过小，工具数量和状态语义不变。
+
+## 2026-11-03 视觉比例校准与 WorkBuddy 额度
+
+保留用户确认的扁宽 Claude 原始轮廓，不把不同角色拉伸为正方形。22 px 图标盒内，Claude 图案宽度为 92/100，Codex 与 WorkBuddy 为 78/100，各自保持宽高比；所有状态使用同一基础尺寸，只改变表情、位移与旋转。额度、进度、问号统一 15 px、20 px 行高；额度使用 400 常规字重，进度和问号保持 500。Codex 使用参考图的花瓣轮廓与蓝紫渐变，以深色 >_ 线条为基础表情，不能替换成正圆。视觉回归额外检查真实绘制像素，防止仅验证 CSS 外框。
+
+WorkBuddy 的 credits 窗口可用真实 usedPercent / remainingPercent 投影为剩余额度；没有百分比的无限或未知窗口不猜测。Token Monitor 插件仅消费宿主额度，独立 Mac Notch 仅使用自己的登录读取。本机加密登录不等于授权成功，Token Monitor 需使用已有 Web 登录入口添加账号。最多同时启用两个工具的约束保持。
+
+## WorkBuddy 开启后网页授权
+
+开启 WorkBuddy 并成功保存后才检查登录；最多两个工具的校验失败时不得发起授权。已有有效额度/已配置账号时不重复打开网页；初始化、后台额度刷新不自动弹网页。开关下显示授权用途说明，提供重新登录与取消；授权失败不关闭任务监测。Token Monitor 使用宿主的 WorkBuddy Web 账号接口；Mac Notch 复用 MIT 来源授权协议，使用独立 safeStorage 加密文件，互不读取账号配置。成功授权后刷新额度；真实账号授权需用户在浏览器完成。
+
+## 菜单栏与刘海条独立
+
+刘海条最多两个工具；菜单栏的三个开关完全独立，可全开，且不因对应工具在刘海条关闭而消失。菜单栏点击与额度刷新使用菜单栏自身的启用范围；Mac Notch 的用量/任务监测仍只按刘海条工具设置。PNG 经过可见轮廓校准再缩放为 20 px 图标盒，Codex / WorkBuddy 可见宽度均为 15.6 px，保持原图宽高比。Codex 表情仅变化深色终端线条，不叠加额外嘴巴与眉毛。

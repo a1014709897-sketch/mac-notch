@@ -1,8 +1,8 @@
 {
   "name": "mac-notch",
   "productName": "Mac Notch",
-  "version": "0.2.5",
-  "description": "macOS notch companion and menu bar subscription quotas for Claude and Codex",
+  "version": "0.2.6",
+  "description": "macOS notch companion and menu bar subscription quotas for Claude, Codex and WorkBuddy",
   "main": "src/main/index.js",
   "license": "MIT",
   "author": "Mac Notch contributors",

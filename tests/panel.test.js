@@ -6,16 +6,17 @@ const vm = require("node:vm");
 const tick = () => new Promise(resolve => setImmediate(resolve));
 function harness() {
   const settings = {providers:{claude:true,codex:true}, menuBar:{claude:true,codex:true}, idleQuota:false,startAtLogin:false,notifications:true};
-  const controls = Object.fromEntries(["assistance-notifications","swap-gestures","gesture-description","gesture-feedback","check-update","download-update","open-update","notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
+  const controls = Object.fromEntries(["workbuddy-login","workbuddy-cancel","workbuddy-login-status","workbuddy","menu-workbuddy","assistance-notifications","swap-gestures","gesture-description","gesture-feedback","check-update","download-update","open-update","notifications","claude","codex","idle-quota","menu-claude","menu-codex","login","settings","notice","version","quit"].map(id=>[id,{checked:false,textContent:""}]));
   const requests = [];
-  let onState;
+  let onState, logins=0;
   const context = vm.createContext({document:{getElementById:id=>controls[id],querySelectorAll:()=>[]}, macNotch:{
     get:async()=>({settings:structuredClone(settings),version:"test"}),
+    workbuddyLogin:async()=>{logins++;return {ok:true};},workbuddyCancel:async()=>true,
     onState:callback=>{onState=callback;},onNotice:()=>{},quit:()=>{},
     save:patch=>new Promise((resolve,reject)=>requests.push({patch:JSON.parse(JSON.stringify(patch)),resolve,reject})),
   }});
   vm.runInContext(fs.readFileSync(require.resolve("../src/renderer/panel.js"),"utf8"),context);
-  return {controls,requests,settings,
+  return {controls,requests,settings,get logins(){return logins;},
     change(id,value){controls[id].checked=value;controls[id].onchange();},
     broadcast(){onState({settings:structuredClone(settings),version:"test"});},
     succeed(i){const request=requests[i];for(const [key,value]of Object.entries(request.patch))settings[key]=typeof value==="object"?{...settings[key],...value}:value;request.resolve({ok:true,settings:structuredClone(settings)});},
@@ -59,4 +60,12 @@ test("notification toggle defaults on, saves immediately and restores on failure
   h.change("notifications",true);await tick();
   h.requests[1].resolve({ok:false,error:"不可写",settings:structuredClone(h.settings)});await tick();
   assert.equal(h.controls.notifications.checked,false);
+});
+
+test('WorkBuddy login follows successful enable only; third-tool rejection never opens it',async()=>{
+ const h=harness();await tick();h.change('workbuddy',true);await tick();
+ h.requests[0].resolve({ok:false,error:'最多两个工具',settings:structuredClone(h.settings)});await tick();assert.equal(h.logins,0);
+ h.change('codex',false);await tick();h.succeed(1);await tick();
+ h.change('workbuddy',true);await tick();h.succeed(2);await tick();assert.equal(h.logins,1);
+ h.broadcast();await tick();assert.equal(h.logins,1);
 });

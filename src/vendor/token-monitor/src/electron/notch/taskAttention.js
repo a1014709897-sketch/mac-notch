@@ -19,7 +19,7 @@ function frontmostTool() {
     const app = get(get(cls('NSWorkspace'), sel('sharedWorkspace')), sel('frontmostApplication'));
     const identifier = get(app, sel('bundleIdentifier'));
     const bundle = identifier ? text(identifier, sel('UTF8String')) : '';
-    return { 'com.openai.codex': 'codex', 'com.anthropic.claudefordesktop': 'claude' }[bundle] || null;
+    return { 'com.tencent.workbuddy.mac': 'workbuddy', 'com.openai.codex': 'codex', 'com.anthropic.claudefordesktop': 'claude' }[bundle] || null;
   } catch { return null; }
 }
 
@@ -45,7 +45,7 @@ function createVisitAttention(dwellMs = 1000) {
   let previous = null, enteredAt = 0;
   return (completed, foreground, now = Date.now()) => {
     if (foreground !== previous) { previous = foreground; enteredAt = now; }
-    if (!['claude', 'codex'].includes(foreground)) return [];
+    if (!['claude', 'codex', 'workbuddy'].includes(foreground)) return [];
     return completed.filter(task => task.provider === foreground &&
       Number.isFinite(task.completedAt) && now - Math.max(enteredAt, task.completedAt) >= dwellMs);
   };

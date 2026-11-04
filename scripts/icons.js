@@ -10,7 +10,7 @@ app.whenReady().then(async () => {
     webPreferences: { sandbox: true },
   });
   await w.loadURL("about:blank");
-  for (const name of ["claude", "codex", "app"]) {
+  for (const name of (process.argv.includes("--workbuddy") ? ["workbuddy"] : ["claude", "codex", "workbuddy", "app"])) {
     const svg = fs
       .readFileSync(path.join(__dirname, "../assets", name + ".svg"), "utf8")
       .replace(/width="1em"/, 'width="64"')

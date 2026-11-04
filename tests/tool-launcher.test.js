@@ -125,3 +125,10 @@ test("successful notification opens dismiss only the clicked notification and pr
     if (!url) assert.equal(h.activated[0][1], h.completed);
   }
 });
+
+test('WorkBuddy launch uses the installed official bundle identifier', async () => {
+  let args;
+  const open = createToolLauncher({execute(_file,value,_options,callback){args=value;callback(null);}});
+  assert.equal(await open('workbuddy'),true);
+  assert.deepEqual(args,['-b','com.tencent.workbuddy.mac']);
+});

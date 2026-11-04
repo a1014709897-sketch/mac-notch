@@ -2,7 +2,7 @@
 const {
   createTaskBatches,
 } = require("../vendor/token-monitor/src/electron/notch/taskBatch");
-const PROVIDERS = ["claude", "codex"];
+const PROVIDERS = ["claude", "codex", "workbuddy"];
 // Completion needs a witnessed active turn; disappearance is never success.
 class TaskState {
   constructor() {
@@ -44,7 +44,7 @@ class TaskState {
         }), description: row.waitingPrompts?.[id] || "" }));
       } else next.waitingEvents = [];
       if (row.state === "ended") {
-        if (!old || old.state === "idle") continue;
+        if (!old || old.state === "idle" || (row.provider === "workbuddy" && row.turn !== old.turn)) continue;
         next.completedAt = old.completedAt || now;
       }
       this.sessions.set(key, next);

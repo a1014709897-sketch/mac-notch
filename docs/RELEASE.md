@@ -16,7 +16,7 @@ npm run checksums
 
 `dist` 默认生成 Apple Silicon 的 `.app`、DMG 与 ZIP。Intel 使用 `npm run dist:x64`。不将本机 node_modules 或用户配置加入源码包。`package-lock.json` 固定依赖图。
 
-若 npm 配置了 `ignore-scripts=true`，Electron 二进制不会自动下载，执行 `node node_modules/electron/install.js`。图标 PNG 已纳入源码；重新生成运行 `npx electron scripts/icons.js`。
+若 npm 配置了 `ignore-scripts=true`，Electron 二进制不会自动下载，执行 `node node_modules/electron/install.js`。图标 PNG 已纳入源码；重新生成运行 `npx electron scripts/icons.js`，菜单栏光学校准图标运行 `npx electron scripts/tray-icons.cjs`。
 
 ## 发布身份
 

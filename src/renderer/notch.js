@@ -54,19 +54,17 @@ async function render(data) {
   const revision = ++renderRevision;
   if (key !== last) {
     last = key;
+    retainNotchMascots(tasks.map(task => task.provider));
     root.replaceChildren();
     for (const task of tasks) {
       const button = document.createElement("button");
       button.className = `tool ${task.provider} state-${task.state}${(task.animating ?? task.state === "running") ? " animating" : ""}${task.progress && task.state === "running" ? " has-progress" : ""}${tasks.length === 1 ? " single" : ""}`;
-      button.title = `${task.provider === "claude" ? "Claude" : "Codex"} · ${{ idle: "空闲", running: "执行中", waiting: "需要协助", ended: "已完成" }[task.state]} · 单击打开工具`;
+      button.title = `${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[task.provider]} · ${{ idle: "空闲", running: "执行中", waiting: "需要协助", ended: "已完成" }[task.state]} · 单击打开工具`;
       button.title += data.settings?.swapGestures ? " · 双击打开控制页 · 右击查看额度" : " · 右击打开控制页 · 双击查看额度";
       if (task.progress)
         button.title += ` · 已完成 ${task.progress.done}/${task.progress.total}`;
       button.setAttribute("aria-label", button.title);
-      const logo = document.createElement("img");
-      logo.className = "logo";
-      logo.src = `../../assets/${task.provider}.svg`;
-      logo.alt = task.provider;
+      const logo = createNotchMascot(task);
       const status = document.createElement("span");
       status.className = "status";
       if (task.state === "running" && task.progress) {

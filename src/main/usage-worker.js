@@ -5,6 +5,7 @@ const fs = require("node:fs"),
   os = require("node:os");
 const { parserState, consume, summarize } = require("./usage");
 const roots = {
+  workbuddy: [".workbuddy", ".workbuddy-ai"].map(p => path.join(os.homedir(), p, "projects")),
   codex: [
     path.join(
       process.env.CODEX_HOME || path.join(os.homedir(), ".codex"),

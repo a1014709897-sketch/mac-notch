@@ -1,7 +1,8 @@
 "use strict";
 const fs = require("node:fs"),
   path = require("node:path");
-const { PROVIDERS } = require("./state");
+// Legacy visual fixtures intentionally use the original pair. WorkBuddy pairs have separate checks.
+const PROVIDERS = ["claude", "codex"];
 const wait = () => new Promise((r) => setTimeout(r, 400));
 module.exports = async function smoke({
   notch,
@@ -245,10 +246,15 @@ module.exports = async function smoke({
       {name:"large-total", period:"month", large:true},
       {name:"full-month", period:"month", fullMonth:true},
       {name:"loading", period:"day", loading:true},
+      {name:"workbuddy-codex", period:"day", workbuddy:true},
     ];
     const dashboardChecks = [];
     for (const fixture of dashboardCases) {
       const data = structuredClone(dashboardBase);
+      if (fixture.workbuddy) {
+        data.settings.providers = {claude:false,codex:true,workbuddy:true};
+        data.quotas.workbuddy = {windows:[],error:"WorkBuddy 已加密本机登录信息，暂时无法读取订阅额度"};
+      }
       if (fixture.allWindows) {
         data.quotas.claude.windows.push({label:"Sonnet 每周",remaining:100,resetAt});
         data.quotas.codex.windows.push({label:"每周",remaining:0,resetAt});
@@ -472,15 +478,15 @@ module.exports = async function smoke({
     notificationToggleChecks.push(Boolean(notifications.current));
     state.sessions.clear(); notifications.clear(); syncNotification();
     await changeSetting("codex", false);
-    liveSettingsChecks.push(!store.public().providers.codex && trays.size===1 && payload().tasks.every(t=>t.provider==="claude") && panel.isVisible());
+    liveSettingsChecks.push(!store.public().providers.codex && trays.size===Object.values(store.public().menuBar).filter(Boolean).length && trays.has("codex") && payload().tasks.every(t=>t.provider==="claude") && panel.isVisible());
     await changeSetting("claude", false);
     liveSettingsChecks.push(!notch.isVisible() && payload().tasks.length===0 && panel.isVisible());
     await panel.webContents.executeJavaScript(`document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('codex').click();`);
     await wait();
-    liveSettingsChecks.push(store.public().providers.claude && store.public().providers.codex && trays.size===2);
+    liveSettingsChecks.push(store.public().providers.claude && store.public().providers.codex && trays.size===Object.values(store.public().menuBar).filter(Boolean).length);
     const usageBeforeDisplayChange = payload().usage;
     await changeSetting("menu-codex", false);
-    liveSettingsChecks.push(trays.size===1 && payload().tasks.length===2 && payload().usage===usageBeforeDisplayChange);
+    liveSettingsChecks.push(trays.size===Object.values(store.public().menuBar).filter(Boolean).length && !trays.has("codex") && payload().tasks.length===2 && payload().usage===usageBeforeDisplayChange);
     await changeSetting("idle-quota", true);
     liveSettingsChecks.push(store.public().idleQuota && payload().usage===usageBeforeDisplayChange);
     await changeSetting("login", true);
@@ -537,26 +543,36 @@ module.exports = async function smoke({
     await notch.webContents.executeJavaScript(`document.querySelector('#notification-body').click()`); await wait();
     assistanceChecks.push(!notifications.current && state.sessions.size === 0);
     panel.hide();
+    store.update({providers:{claude:true,codex:true,workbuddy:false}});
+    syncProviders();
+    const rejectedThird = await panel.webContents.executeJavaScript(`macNotch.save({providers:{workbuddy:true}})`);
+    liveSettingsChecks.push(!rejectedThird.ok && !rejectedThird.settings.providers.workbuddy);
     const switches = [];
     for (const providers of [
       { claude: true, codex: false },
       { claude: false, codex: true },
       { claude: false, codex: false },
-      { claude: true, codex: true },
+      { claude: true, codex: false, workbuddy: true },
+      { claude: false, codex: true, workbuddy: true },
+      { claude: false, codex: false, workbuddy: true },
+      { claude: false, codex: false, workbuddy: false },
+      { claude: true, codex: true, workbuddy: false },
     ]) {
       store.update({ providers });
       syncProviders();
       notch.webContents.send("state", payload());
       await wait();
+      if (providers.workbuddy && out) fs.writeFileSync(path.join(out, `workbuddy-${providers.claude ? 'claude' : providers.codex ? 'codex' : 'single'}.png`), (await notch.webContents.capturePage()).toPNG());
       switches.push({
         expected: Object.values(providers).filter(Boolean).length,
         trays: trays.size,
+        expectedMenus: Object.values(store.public().menuBar).filter(Boolean).length,
         tasks: payload().tasks.length,
         visible: notch.isVisible(),
       });
     }
     const menuChecks = [];
-    for (const menuBar of [{claude:false,codex:true},{claude:true,codex:false},{claude:false,codex:false}]) {
+    for (const menuBar of [{claude:true,codex:true,workbuddy:true},{claude:false,codex:true,workbuddy:false},{claude:true,codex:false,workbuddy:true},{claude:false,codex:false,workbuddy:false}]) {
       store.update({menuBar}); syncProviders();
       menuChecks.push(trays.size === Object.values(menuBar).filter(Boolean).length && payload().tasks.length === 2 && notch.isVisible());
     }
@@ -574,7 +590,7 @@ module.exports = async function smoke({
       quotaFitChecks.push(await notch.webContents.executeJavaScript(`(() => {
         const root=document.querySelector("#notch"), cameraLeft=Number(root.dataset.cameraLeft), gap=Number(root.dataset.cameraGap);
         const regions=[...document.querySelectorAll('.logo,.idle-quota')].map(n=>{const r=n.getBoundingClientRect();const offset=document.querySelector("#notch").getBoundingClientRect().left;return {left:r.left-offset,right:r.right-offset};});
-        return {width:root.getBoundingClientRect().width, originalSize:[...document.querySelectorAll(".logo")].every(n=>getComputedStyle(n).width==="22px") && [...document.querySelectorAll(".idle-quota")].every(n=>getComputedStyle(n).fontSize==="13px" && getComputedStyle(n).letterSpacing==="normal"), fits:regions.every(r=>r.left>=0&&r.right<=root.getBoundingClientRect().width&&(!gap||r.right<=cameraLeft||r.left>=cameraLeft+gap))};
+        return {width:root.getBoundingClientRect().width, originalSize:[...document.querySelectorAll(".logo")].every(n=>getComputedStyle(n).width==="22px") && [...document.querySelectorAll(".idle-quota")].every(n=>getComputedStyle(n).fontSize==="15px" && getComputedStyle(n).letterSpacing==="normal"), fits:regions.every(r=>r.left>=0&&r.right<=root.getBoundingClientRect().width&&(!gap||r.right<=cameraLeft||r.left>=cameraLeft+gap))};
       })()`));
     }
     const ok =
@@ -599,18 +615,18 @@ module.exports = async function smoke({
       JSON.stringify(updatedQuotaCheck) === JSON.stringify(["—","59%"]) &&
       periodChecks.noSettings && periodChecks.noRefresh &&
       periodChecks.out.every(r => r.pressed === 'true' && r.bars > 0) &&
-      results.every(r => r.sizing.icons.every(i => i.width === '22px' && i.padding === (i.provider === 'codex' ? '3px' : '0px')) && r.sizing.fonts.every(f => f === '15px')) &&
+      results.every(r => r.sizing.icons.every(i => i.width === '22px' && i.padding === '0px') && r.sizing.fonts.every(f => f === '15px')) &&
       bounds.y === geometry.y &&
       panelCheck.quotaCards === 2 &&
       panelCheck.bars === 24 &&
       !panelCheck.overflow &&
       panelCheck.contentTop >= panelCheck.headerBottom &&
-      setupCheck.switches === 8 &&
+      setupCheck.switches === 10 &&
       !setupCheck.overflow &&
       !setupCheck.legacyInputs &&
       switches.every(
         (r) =>
-          r.expected === r.trays &&
+          r.expectedMenus === r.trays &&
           r.tasks === r.expected &&
           r.visible === r.expected > 0,
       ) &&

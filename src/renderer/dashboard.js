@@ -36,7 +36,7 @@
     $("cost").textContent = u.loading ? "正在读取本机用量…" :
       day.unpricedTokens === day.tokens && day.tokens > 0 ? "暂无对应模型的价格" :
       `API 费用估算 ${money(day.cost)}${day.unpricedTokens ? " 起" : ""}`;
-    $("breakdown").replaceChildren(...enabled.map(p => el("span", `${p === "claude" ? "Claude" : "Codex"} ${compact(day[p])}`,p)));
+    $("breakdown").replaceChildren(...enabled.map(p => el("span", `${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[p]} ${compact(day[p])}`,p)));
     $("trend-label").textContent = period === "day" ? "今日 · 按小时" :
       `${period === "week" ? "本周 · 周一至今" : "本月 · 1日至今"}`;
     for (const button of document.querySelectorAll("[data-period]")) button.setAttribute("aria-pressed",String(button.dataset.period === period));
@@ -61,7 +61,7 @@
         const q = data.quotas[p],
           article = el("article"),
           identity = el("div", undefined, "quota-identity"),
-          title = el("h2", p === "claude" ? "Claude" : "Codex"),
+          title = el("h2", ({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[p]),
           image = el("img"),
           windows = el("div", undefined, "quota-windows");
         image.src = `../../assets/${p}.svg`;

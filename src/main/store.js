@@ -21,8 +21,10 @@ function createStore(directory, safeStorage) {
   data.providers = {
     claude: data.providers?.claude !== false,
     codex: data.providers?.codex !== false,
+    workbuddy: data.providers?.workbuddy === true,
   };
-  data.menuBar = { claude: data.menuBar?.claude !== false, codex: data.menuBar?.codex !== false };
+  if (Object.values(data.providers).filter(Boolean).length > 2) data.providers.workbuddy = false;
+  data.menuBar = { claude: data.menuBar?.claude !== false, codex: data.menuBar?.codex !== false, workbuddy: data.menuBar?.workbuddy !== false };
   function save(next) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
     const tmp = file + ".tmp";
@@ -57,11 +59,13 @@ function createStore(directory, safeStorage) {
         if (typeof value[key] === "boolean") next[key] = value[key];
       if (typeof value.notifications === "boolean") next.notifications = value.notifications;
       if (typeof value.idleQuota === "boolean") next.idleQuota = value.idleQuota;
-      for (const provider of ["claude", "codex"])
+      for (const provider of ["claude", "codex", "workbuddy"])
         if (typeof value.menuBar?.[provider] === "boolean") next.menuBar[provider] = value.menuBar[provider];
-      for (const provider of ["claude", "codex"])
+      for (const provider of ["claude", "codex", "workbuddy"])
         if (typeof value.providers?.[provider] === "boolean")
           next.providers[provider] = value.providers[provider];
+      if (Object.values(next.providers).filter(Boolean).length > 2)
+        throw new Error("最多同时开启 2 个 AI 工具，请先关闭一个工具");
       if (value.setupComplete === true) next.setupComplete = true;
       if (typeof value.startAtLogin === "boolean")
         next.startAtLogin = value.startAtLogin;

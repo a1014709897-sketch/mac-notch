@@ -2,6 +2,7 @@
 const { execFile } = require("node:child_process");
 
 const tools = {
+  workbuddy: { name: "WorkBuddy", bundle: "com.tencent.workbuddy.mac" },
   claude: { name: "Claude", bundle: "com.anthropic.claudefordesktop" },
   codex: { name: "Codex", bundle: "com.openai.codex" },
 };

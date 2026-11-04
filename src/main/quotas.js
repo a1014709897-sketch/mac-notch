@@ -118,6 +118,7 @@ async function claudeOAuth(fetch) {
   }
 }
 async function readQuota(provider, fetch, cookie) {
+  if (provider === "workbuddy") return require("./workbuddy-quota").readWorkbuddyQuota(fetch);
   let data, windows;
   if (provider === "codex") {
     let auth;

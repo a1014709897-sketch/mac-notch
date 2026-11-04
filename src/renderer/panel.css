@@ -155,3 +155,7 @@ button:focus-visible, summary:focus-visible { outline: 2px solid #8cb99f; outlin
 #release-notes { margin-top: 10px; font-size: 11px; }
 #release-notes-text { white-space: pre-wrap; overflow-wrap: anywhere; }
 [hidden] { display: none !important; }
+
+.workbuddy-login { margin:4px 0 12px; color:#aebbb3; }
+.workbuddy-login small { display:block; margin:5px 0; }
+.workbuddy-login [hidden] { display:none; }

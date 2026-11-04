@@ -61,7 +61,7 @@ class NotificationQueue {
   }
   observe(rows, now = Date.now(), foreground = null) {
     this.suppressForeground(foreground);
-    const eligible = rows.filter(r => ["claude", "codex"].includes(r.provider) && r.state === "ended" && !r.acknowledged);
+    const eligible = rows.filter(r => ["claude", "codex", "workbuddy"].includes(r.provider) && r.state === "ended" && !r.acknowledged);
     const keys = new Set(eligible.map(r => `${r.provider}:${r.id}:${r.completedAt}`));
     const waiting = rows.filter(row => row.state === "waiting").flatMap(row =>
       (row.waitingEvents || []).map(event => ({ row, event, key: `${row.provider}:${row.id}:waiting:${event.key}` })));
@@ -82,11 +82,11 @@ class NotificationQueue {
       this.seen.set(key, now);
       this.pending.push({ key, kind: "ended", duration: DURATION, provider: row.provider, sessionId: row.id,
         desktopId: row.notification?.desktopId || null,
-        title: clean(row.notification?.title, 160) || `${row.provider === "claude" ? "Claude" : "Codex"} 会话`,
+        title: clean(row.notification?.title, 160) || `${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[row.provider]} 会话`,
         description: row.notification?.description || "本轮处理已结束。", createdAt: now });
     }
     for (const { row, event, key } of waiting) {
-      const title = clean(row.notification?.title, 160) || `${row.provider === "claude" ? "Claude" : "Codex"} 会话`;
+      const title = clean(row.notification?.title, 160) || `${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[row.provider]} 会话`;
       const description = notificationText(event.description) || "请回到会话回答问题或确认下一步。";
       // A partial reply updates the same card without replaying or restarting it.
       if (this.current?.key === key) Object.assign(this.current, { title, description });
@@ -120,7 +120,7 @@ class NotificationQueue {
     return true;
   }
   suppressForeground(foreground) {
-    if (!["claude", "codex"].includes(foreground)) return;
+    if (!["claude", "codex", "workbuddy"].includes(foreground)) return;
     this.pending = this.pending.filter(item => item.provider !== foreground);
     if (this.current?.provider === foreground) this.dismiss(this.current.key);
   }

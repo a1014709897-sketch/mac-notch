@@ -1,6 +1,8 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const fields = {
+  workbuddy: ["providers", "workbuddy"],
+  "menu-workbuddy": ["menuBar", "workbuddy"],
   claude: ["providers", "claude"],
   codex: ["providers", "codex"],
   "idle-quota": ["idleQuota"],
@@ -11,6 +13,7 @@ const fields = {
   "assistance-notifications": ["assistanceNotifications"],
   "swap-gestures": ["swapGestures"],
 };
+let loginFlight;
 let settings, queue = Promise.resolve(), revision = 0;
 const pending = new Map(), errors = new Map();
 const valueAt = (data, keys) => keys.reduce((value, key) => value?.[key], data);
@@ -40,9 +43,12 @@ for (const [id, keys] of Object.entries(fields)) {
     // an old snapshot of another switch back over the user's latest choice.
     queue = queue.then(async () => {
       try {
+        const wasWorkbuddyEnabled = settings?.providers?.workbuddy === true;
         const result = await macNotch.save({ ...patch, setupComplete: true });
         if (result.settings) settings = result.settings;
         if (!result.ok) throw new Error(result.error || "设置未能保存，请重试");
+        if(id==='workbuddy' && checked && !wasWorkbuddyEnabled) void startWorkbuddyLogin(false);
+        if(id==='workbuddy' && !checked && loginFlight) void macNotch.workbuddyCancel();
         if (id === "swap-gestures") $("gesture-feedback").textContent = result.settings.swapGestures
           ? "已交换：双击打开控制页，右击查看额度。" : "已恢复：右击打开控制页，双击查看额度。";
       } catch (error) {
@@ -84,3 +90,15 @@ for (const [id, action] of [["check-update", "checkUpdate"], ["download-update",
   $(id).onclick = async () => { try { await macNotch[action](); } catch (error) { $("update-status").textContent = error.message; } };
 for (const button of document.querySelectorAll("[data-preview]"))
   button.onclick = () => macNotch.previewNotification(button.dataset.preview);
+
+function startWorkbuddyLogin(force) {
+  if(loginFlight)return loginFlight;
+  const button=$('workbuddy-login'), cancel=$('workbuddy-cancel'), status=$('workbuddy-login-status');
+  button.disabled=true;cancel.hidden=false;status.textContent='请在浏览器完成 WorkBuddy 授权；任务状态仍可正常使用。';
+  loginFlight=macNotch.workbuddyLogin(force).then(result=>{
+    status.textContent=result.ok ? (result.skipped?'已有登录，无需重复授权。':'授权成功，正在更新剩余额度。') : result.errorCode==='CANCELED'?'已取消授权，可点击重新登录。':result.errorCode==='PERSISTENCE_FAILED'?'无法安全保存授权，请检查系统钥匙串后重试。':'授权未完成或已超时，请点击重新登录。';
+  }).catch(()=>{status.textContent='无法打开授权，请点击重新登录。';}).finally(()=>{loginFlight=null;button.disabled=false;cancel.hidden=true;});
+  return loginFlight;
+}
+if($('workbuddy-login'))$('workbuddy-login').onclick=()=>void startWorkbuddyLogin(true);
+if($('workbuddy-cancel'))$('workbuddy-cancel').onclick=()=>void macNotch.workbuddyCancel();

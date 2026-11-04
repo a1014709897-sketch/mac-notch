@@ -1,6 +1,7 @@
 "use strict";
 // Only numeric usage metadata leaves the worker. Message contents are discarded.
 const crypto = require("node:crypto");
+const { usageTokens, messageIdOf } = require("../vendor/token-monitor/src/shared/providers/codebuddy/transcript");
 const { estimate } = require("./pricing");
 const n = (v) => (Number.isFinite(v) && v >= 0 ? v : 0);
 const hash = (v) => crypto.createHash("sha256").update(v).digest("hex");
@@ -45,6 +46,12 @@ function consume(state, row, provider) {
     id,
     target = state.native,
     model = state.model;
+  if (provider === "workbuddy") {
+    const usage = usageTokens(row), responseId = messageIdOf(row);
+    if (!usage || !responseId) return;
+    state.native[hash(`workbuddy:${responseId}`)] = { at, provider, tokens: usage.total, cost: 0, unpricedTokens: usage.total, model: row.message?.model || "unknown" };
+    return;
+  }
   if (provider === "claude") {
     if (row.type !== "assistant" || !row.message?.usage || !row.message.id)
       return;
@@ -106,6 +113,7 @@ function summarize(states, enabled = ["claude", "codex"], now = Date.now()) {
       unpricedTokens: 0,
       claude: 0,
       codex: 0,
+      workbuddy: 0,
     };
   });
   const lookup = new Map(days.map((d) => [d.date, d])),
@@ -130,7 +138,7 @@ function summarize(states, enabled = ["claude", "codex"], now = Date.now()) {
     day.unpricedTokens += row.unpricedTokens;
   }
   const today = days[30];
-  const empty = (date) => ({date, tokens:0, cost:0, unpricedTokens:0, claude:0, codex:0});
+  const empty = (date) => ({date, tokens:0, cost:0, unpricedTokens:0, claude:0, codex:0, workbuddy:0});
   const hours = Array.from({length:24}, (_, hour) => empty(`${String(hour).padStart(2, "0")}:00`));
   for (const row of unique.values()) {
     if (dayKey(row.at) !== today.date) continue;
@@ -143,7 +151,7 @@ function summarize(states, enabled = ["claude", "codex"], now = Date.now()) {
   const week = days.filter(d => d.date >= dayKey(weekStart));
   const month = days.filter(d => d.date.slice(0, 7) === today.date.slice(0, 7));
   const period = (bins) => ({bins, total: bins.reduce((sum, d) => {
-    for (const key of ["tokens", "cost", "unpricedTokens", "claude", "codex"]) sum[key] += d[key];
+    for (const key of ["tokens", "cost", "unpricedTokens", "claude", "codex", "workbuddy"]) sum[key] += d[key];
     return sum;
   }, empty(null))});
   return { days: days.slice(-7), today, periods: {day:period(hours), week:period(week), month:period(month)}, updatedAt: now, loading: false };

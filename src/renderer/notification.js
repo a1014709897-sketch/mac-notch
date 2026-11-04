@@ -26,7 +26,7 @@ function renderNotification(value, closing = false) {
   badge.className = !value ? "" : value.kind === "waiting" ? "question" : "check";
   badge.textContent = value?.kind === "waiting" ? "?" : "";
   if (!value) { cancelAnimationFrame(countdownFrame); return; }
-  const source = value.provider === "codex" ? "Codex" : "Claude";
+  const source = ({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[value.provider];
   document.querySelector("#notification-source").textContent = source;
   notificationElement.setAttribute("aria-label", `${source} 通知`);
   document.querySelector("#notification-title-text").textContent = value.title;

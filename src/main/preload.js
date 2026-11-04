@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld("macNotch", {
   closeSettings: () => ipcRenderer.send("settings:close"),
   collapse: () => ipcRenderer.send("panel:close"),
   refresh: () => ipcRenderer.send("quota:refresh"),
+  workbuddyLogin: force => ipcRenderer.invoke('workbuddy:login', force),
+  workbuddyCancel: () => ipcRenderer.invoke('workbuddy:cancel'),
   save: (value) => ipcRenderer.invoke("settings:save", value),
   quit: () => ipcRenderer.send("app:quit"),
   demo: (state) => ipcRenderer.send("demo:set", state),

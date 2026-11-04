@@ -1,0 +1,47 @@
+/* Approved state expressions stay inside a fixed 22px slot. */
+#notch .mascot { --lift:-3px; --half-lift:-1.5px; --dip:1.5px; object-fit:contain; transform-origin:50% 80%; }
+#notch .mascot[data-pose="idle"] { animation:nm-idle 7s ease-in-out infinite; }
+#notch .codex .mascot[data-pose="idle"] { animation-name:nm-idle-turn; }
+#notch .workbuddy .mascot[data-pose="idle"] { animation-name:nm-peek; }
+#notch .mascot[data-pose="running"] { animation:nm-hop 2.4s ease-in-out infinite; }
+#notch .codex .mascot[data-pose="running"] { animation:nm-codex-work 2.2s ease-in-out infinite; }
+#notch .workbuddy .mascot[data-pose="running"] { animation:nm-double-hop 1.8s ease-in-out infinite; }
+#notch .mascot[data-pose="waiting"] { animation:nm-ask 4.6s ease-in-out infinite; }
+#notch .codex .mascot[data-pose="waiting"] { animation-name:nm-ask-turn; }
+#notch .workbuddy .mascot[data-pose="waiting"] { animation-name:nm-ask-buddy; }
+#notch .mascot[data-pose="done"] { animation:nm-finish .85s ease-out both; }
+#notch .codex .mascot[data-pose="done"] { animation-name:nm-settle; }
+#notch .workbuddy .mascot[data-pose="done"] { animation-name:nm-buddy-finish; }
+#notch .mascot[data-pose="multi"] { animation:nm-shift 2s ease-in-out infinite; }
+#notch .codex .mascot[data-pose="multi"] { animation:nm-steps 2.8s ease-in-out infinite; }
+#notch .workbuddy .mascot[data-pose="multi"] { animation:nm-buddy-shift 2s ease-in-out infinite; }
+@media(prefers-reduced-motion:reduce) { #notch .mascot { animation:none !important; } }
+@keyframes nm-idle { 0%,14%,100%{transform:none} 5%{transform:translateY(var(--half-lift)) rotate(-4deg)} 10%{transform:rotate(3deg)} }
+@keyframes nm-idle-turn { 0%,16%,100%{transform:none} 5%{transform:rotate(-10deg)} 11%{transform:rotate(6deg)} }
+@keyframes nm-peek { 0%,18%,100%{transform:none} 6%,10%{transform:translateY(var(--half-lift)) rotate(6deg)} }
+@keyframes nm-hop { 0%,40%,100%{transform:none} 20%{transform:translateY(var(--lift))} }
+@keyframes nm-codex-work { 0%,50%,100%{transform:none} 14%{transform:translateY(var(--half-lift)) rotate(-7deg)} 28%{transform:translateY(var(--dip)) rotate(5deg)} 38%{transform:rotate(-2deg)} 70%{transform:translateY(var(--half-lift)) rotate(6deg)} 84%{transform:translateY(var(--dip)) rotate(-4deg)} }
+@keyframes nm-double-hop { 0%,36%,65%,100%{transform:none} 18%{transform:translateY(var(--lift))} 50%{transform:translateY(var(--half-lift))} }
+@keyframes nm-dot { 0%,65%,100%{opacity:.4;transform:none} 30%{opacity:1;transform:translateY(-2px)} }
+@keyframes nm-ask { 0%,12%,27%,100%{transform:none} 6%,20%{transform:translateY(var(--half-lift))} }
+@keyframes nm-ask-turn { 0%,14%,30%,100%{transform:none} 7%,22%{transform:translateY(var(--half-lift)) rotate(-2deg)} }
+@keyframes nm-ask-buddy { 0%,12%,29%,100%{transform:none} 6%{transform:translateY(var(--half-lift)) rotate(-2deg)} 21%{transform:translateY(var(--half-lift)) rotate(2deg)} }
+@keyframes nm-question { 0%,38%,100%{opacity:.7;transform:none} 12%,24%{opacity:1;transform:translateY(-2px)} }
+@keyframes nm-finish { 0%{transform:none} 28%{transform:translateY(var(--lift))} 55%{transform:translateY(var(--half-lift)) rotate(-3deg)} 100%{transform:translateY(var(--half-lift)) rotate(-3deg)} }
+@keyframes nm-settle { 0%{transform:rotate(4deg)} 35%{transform:translateY(var(--lift)) rotate(-4deg)} 65%,100%{transform:translateY(var(--half-lift)) rotate(-3deg)} }
+@keyframes nm-buddy-finish { 0%{transform:none} 28%{transform:translateY(var(--lift))} 60%,100%{transform:translateY(var(--half-lift)) rotate(3deg)} }
+@keyframes nm-check { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+@keyframes nm-shift { 0%,50%,100%{transform:none} 23%{transform:translate(-2px,var(--half-lift))} 73%{transform:translate(2px,var(--half-lift))} }
+@keyframes nm-steps { 0%,48%,100%{transform:none} 12%,28%{transform:translateX(-2px) rotate(-12deg)} 20%{transform:translate(-2px,var(--half-lift)) rotate(-12deg)} 62%,78%{transform:translateX(2px) rotate(12deg)} 70%{transform:translate(2px,var(--half-lift)) rotate(12deg)} }
+@keyframes nm-buddy-shift { 0%,50%,100%{transform:none} 23%{transform:translate(-2px,var(--lift)) rotate(-4deg)} 73%{transform:translate(2px,var(--lift)) rotate(4deg)} }
+@keyframes nm-count { from{opacity:.4;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+/* Canvas artwork already includes optical margins; do not apply the old SVG inset twice. */
+#notch .codex .mascot { padding:0; }
+
+/* One typography contract for every provider and compact state. */
+#notch .mascot { width:22px; height:22px; padding:0; box-sizing:border-box; }
+#notch .idle-quota, #notch .progress, #notch .question { font-size:15px; line-height:20px; font-weight:500; font-variant-numeric:tabular-nums; }
+
+/* Quota numbers use regular weight across all three tools. */
+#notch .idle-quota { font-weight:400; }

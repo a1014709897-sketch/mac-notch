@@ -80,6 +80,8 @@ let compactFrame = null, ignoringPointer = null;
 let boundsMode = "compact", collapseSequence = 0, collapseMotion = null, collapseTimeout;
 const { compactHostBounds, containsPoint } = require("./layout");
 const enabled = () => PROVIDERS.filter((p) => store.public().providers[p]);
+const menuProviders = () => PROVIDERS.filter(p => store.public().menuBar[p]);
+const quotaProviders = () => PROVIDERS.filter(p => store.public().providers[p] || store.public().menuBar[p]);
 const state = new TaskState(),
   readState = createTaskReadState(),
   visitAttention = createVisitAttention(),
@@ -87,6 +89,7 @@ const state = new TaskState(),
 let quotas = {
   claude: { provider: "claude", windows: [], error: "尚未刷新" },
   codex: { provider: "codex", windows: [], error: "尚未刷新" },
+  workbuddy: { provider: "workbuddy", windows: [], error: "尚未刷新" },
 };
 const file = (name) => path.join(__dirname, "../renderer", name);
 function payload() {
@@ -281,7 +284,7 @@ async function openTool(provider) {
 function menu(provider) {
   return Menu.buildFromTemplate([
     {
-      label: `打开 ${provider === "claude" ? "Claude" : "Codex"}`,
+      label: `打开 ${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[provider]}`,
       click: () => openTool(provider),
     },
     { label: "用量与额度", click: togglePanel },
@@ -295,9 +298,9 @@ function syncProviders({ refilterUsage = true } = {}) {
   trays.clear();
   fallbackTray?.destroy();
   fallbackTray = null;
-  for (const provider of [...enabled()].reverse().filter(p => store.public().menuBar[p])) {
+  for (const provider of [...menuProviders()].reverse()) {
     const image = nativeImage
-      .createFromPath(path.join(__dirname, "../../assets", `${provider}.png`))
+      .createFromPath(path.join(__dirname, "../../assets", `${provider}-tray.png`))
       .resize({ width: 20, height: 20 });
     image.setTemplateImage(false);
     const tray = new Tray(image);
@@ -311,6 +314,7 @@ function syncProviders({ refilterUsage = true } = {}) {
   for (const [key, row] of state.sessions)
     if (!enabled().includes(row.provider)) state.sessions.delete(key);
   if (!enabled().length) {
+    if (!trays.size) {
     const image = nativeImage
       .createFromPath(path.join(__dirname, "../../assets/codex.png"))
       .resize({ width: 18, height: 18 });
@@ -325,6 +329,7 @@ function syncProviders({ refilterUsage = true } = {}) {
         ]),
       ),
     );
+    }
     setExpanded(false);
     notch.hide();
   } else if (!locked) notch.showInactive();
@@ -351,11 +356,11 @@ function updateTray(provider) {
     fontType: "monospacedDigit",
   });
   tray.setToolTip(
-    `${provider === "claude" ? "Claude" : "Codex"} · ${q.error || "剩余额度（最紧张窗口）"}${q.stale ? " · 缓存值" : ""}`,
+    `${({claude: "Claude", codex: "Codex", workbuddy: "WorkBuddy"})[provider]} · ${q.error || "剩余额度（最紧张窗口）"}${q.stale ? " · 缓存值" : ""}`,
   );
 }
 const queuedQuotaProviders = new Set();
-async function refreshQuotas(providers = enabled()) {
+async function refreshQuotas(providers = quotaProviders()) {
   if (quotalock) {
     for (const provider of providers) queuedQuotaProviders.add(provider);
     return;
@@ -363,7 +368,7 @@ async function refreshQuotas(providers = enabled()) {
   quotalock = true;
   try {
     await Promise.all(
-      providers.filter(provider => enabled().includes(provider)).map(async (provider) => {
+      providers.filter(provider => quotaProviders().includes(provider)).map(async (provider) => {
         if (demo || smoke)
           quotas[provider] = {
             provider,
@@ -453,6 +458,19 @@ app.whenReady().then(async () => {
         }
       : { mode: "system" },
   );
+  const workbuddyAccounts = require('./workbuddy-accounts').createWorkbuddyAccounts({
+    directory: app.getPath('userData'), safeStorage, fetch:(...args)=>transport.fetch(...args),
+    openExternal:url=>shell.openExternal(url),
+    onChanged:()=>{ quotas.workbuddy.retryAfter=0; void refreshQuotas(['workbuddy']); }
+  });
+  require('./workbuddy-quota').setWorkbuddyAccounts(workbuddyAccounts);
+  ipcMain.handle('workbuddy:login', async (event, force=false) => {
+    if(!own(event) || isolated) return {ok:false,errorCode:'UNAVAILABLE'};
+    if(!force && quotas.workbuddy.windows?.length && !quotas.workbuddy.error) return {ok:true,skipped:true};
+    return workbuddyAccounts.login(force === true || /登录|授权/.test(quotas.workbuddy.error || ''));
+  });
+  ipcMain.handle('workbuddy:cancel', event=>{if(own(event))workbuddyAccounts.cancel();return true;});
+  app.on('before-quit',()=>workbuddyAccounts.cancel());
   const updateArch = process.arch === "arm64" || (process.platform === "darwin" && app.runningUnderARM64Translation) ? "arm64" : "x64";
   updater = createUpdater({ version: app.getVersion(), arch: updateArch,
     fetch: (...args) => transport.fetch(...args), directory: path.join(app.getPath("userData"), "updates"),
@@ -611,7 +629,7 @@ app.whenReady().then(async () => {
       if (providersChanged || menuChanged) syncProviders({ refilterUsage: providersChanged });
       lastRender = "";
       render();
-      const newlyEnabled = PROVIDERS.filter(p => !before.providers[p] && result.providers[p]);
+      const newlyEnabled = PROVIDERS.filter(p => (!before.providers[p] && result.providers[p]) || (!before.menuBar[p] && result.menuBar[p]));
       if (newlyEnabled.length) {
         for (const provider of newlyEnabled) quotas[provider].retryAfter = 0;
         void refreshQuotas(newlyEnabled);
@@ -701,6 +719,8 @@ app.whenReady().then(async () => {
     if (locked || demo || smoke) return;
     acknowledgeVisits(frontmostTool());
   }, 1000);
+  if (demo && process.argv.includes('--demo-tour'))
+    require('./demo-tour')({store,state,syncProviders,render,app});
   if (smoke)
     setTimeout(
       () =>

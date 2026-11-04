@@ -73,6 +73,14 @@ body {
 .state-ended .logo {
   animation: celebrate 0.6s ease-out;
 }
+/* WorkBuddy bounces inside its fixed 22px box; no scaling or width changes. */
+.workbuddy .logo { animation: none; }
+.workbuddy.state-running.animating .logo { animation: workbuddy-hop 1.8s ease-in-out infinite; }
+@keyframes workbuddy-hop {
+  0%, 36%, 65%, 100% { transform: translateY(0); }
+  18% { transform: translateY(-3px); }
+  50% { transform: translateY(-1.5px); }
+}
 .dots {
   display: flex;
   align-items: center;
@@ -379,7 +387,7 @@ body:not(.expanded) .has-progress .status {
 #quotas { flex: none; }
 #quotas article {
   display: grid;
-  grid-template-columns: 98px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
   column-gap: 20px;
   min-height: 68px;
@@ -430,7 +438,7 @@ body:not(.expanded) .has-progress .status {
   .usage-summary { gap: 18px; }
   .today strong { font-size: 28px; }
   .today strong.large-total { font-size: 21px; }
-  #quotas article { grid-template-columns: 82px minmax(0, 1fr); column-gap: 12px; }
+  #quotas article { grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; }
   .quota-windows { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -556,3 +564,6 @@ body.closing-dashboard #surface::before {
 body.closing-dashboard #notch { background: transparent; }
 body.closing-dashboard #dashboard { position: relative; pointer-events: none; animation: none; }
 @keyframes fold-background { from { opacity: 1; } to { opacity: 0; } }
+
+#breakdown .workbuddy:before { background: #80b4ff; }
+.column .workbuddy { background: #80b4ff; }

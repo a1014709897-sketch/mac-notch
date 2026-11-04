@@ -93,7 +93,7 @@ function codexFiles(now) {
   return candidates;
 }
 async function readActivity(now = Date.now(), enabled = ["claude", "codex"]) {
-  const rows = [];
+  const rows = enabled.includes("workbuddy") ? await require("./workbuddy").readWorkbuddyActivity(now) : [];
   for (const file of enabled.includes("codex") ? codexFiles(now) : []) {
     try {
       const stat = fs.statSync(file);

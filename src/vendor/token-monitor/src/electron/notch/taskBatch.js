@@ -5,7 +5,7 @@ function createTaskBatches() {
   const completedAt = new Map();
   const update = rows => {
     const result = new Map();
-    for (const provider of ['claude', 'codex']) {
+    for (const provider of ['claude', 'codex', 'workbuddy']) {
       const current = new Map();
       for (const row of rows.filter(row => row.provider === provider && row.id)) {
         const priority = { waiting: 3, running: 2, ended: 1 };

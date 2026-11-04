@@ -5,9 +5,9 @@
   "files": {
     "src/electron/notch/desktopCompletion.js": "e9bedf11d421ae1b7e54b9eadf645cbfcc396a3ad75569f37831cf48340ddeca",
     "src/electron/notch/screen.js": "2c18a462724b92b0b25e5c41320e658ca01153b74d114fe9e15f8f5061b6f321",
-    "src/electron/notch/taskAttention.js": "84b8cd6737b4b08994b839c78bba78c0cc933b5cb0766c007a159539167bbe5c",
-    "src/electron/notch/taskBatch.js": "fc945ab5c6f6dce24fcb3e013c992fac1cfa4fbb5e0c4e2e832c6737a479f5b9",
-    "src/electron/notch/taskReadState.js": "3d42dd7a1f40a941d9473c04ec9b1d799ecbdc421665a0e616fe80adfef28fb2",
+    "src/electron/notch/taskAttention.js": "7bbe408ce44f9f551c2b64cb919f93c3ffb9f9391149acd4eeca9493ef5fc0c4",
+    "src/electron/notch/taskBatch.js": "2ab99adf1cc33c36866dfb69f9508f8f9a080b7c3e4d12ab77cf20836eaab6d0",
+    "src/electron/notch/taskReadState.js": "3d4fdb103f882b241e9afb2abbca88cf79df5d6e0fa3e807d79bc18004789648",
     "src/shared/providers/codex/sessionContext.js": "c9f933469a950327923ad0659d4c8578b753089b789de603861d9fc85310055d",
     "src/shared/providers/codex/sessionIdentity.js": "7563c7beade30276d47213a0569d663e9bd2e6fc3d5e1c70f36a0c453e7f319b",
     "src/shared/providers/codex/transcript.js": "daf45fab9a2713ed195bf886d75b524804ab5babbb6c4ae8124c957205409fc2",
@@ -15,6 +15,23 @@
     "src/shared/providers/dsh/sessionFiles.js": "f4044b8d07ade271942dbf5d4de871e5846bdcd2964e232991c16b80a8e7495e",
     "src/shared/sessionActivityProviders.js": "41a5ddf96d6115f04157d46865fa2aa0bafa601759c053418a867ffa2bf6759d",
     "src/shared/sessionContext.js": "48e4f6e3d1f763e79fe863a71dd713d29b94618653e2db7aa5164820580a9d0d",
-    "src/shared/sessionLive.js": "6447a8240dc1cae255ff29fd264a4b0792c921679b08ead20c3760b2c13886a7"
-  }
+    "src/shared/sessionLive.js": "6447a8240dc1cae255ff29fd264a4b0792c921679b08ead20c3760b2c13886a7",
+    "src/electron/providers/workbuddy/localAuth.js": "fa4c3e85e0e3b98e4010d76063ee7bd0fd673de1a5a25ed14e92bc3917143ce1",
+    "src/shared/appVersion.js": "d42ae4b66998aa3b6e813624223febc34e4ca63a7a22017d211622993e9d5441",
+    "src/shared/credentialStore.js": "eb809efa27050e8077a1ee98dcbcdc58e95d3050386d05c87451f953a81718e5",
+    "src/shared/hashKey.js": "e9f27306d14b2aabfc172c1fe968a2bc7873877ca2e51db73d0199780d9866a3",
+    "src/shared/limits/core.js": "84a77455ca03e0be712783b6025d62d04d6dc89402dd71aac1caf405a7a8e6aa",
+    "src/shared/limits/providerHelpers.js": "2dced568f92a94b4fa14a88679f72c611cc7ea1f3fb5925a0777b83a52e648fb",
+    "src/shared/limits/providers.js": "ba7e32155a68a4965a2fd3940632fbba41cec550f638239cb0038327ce8cc96b",
+    "src/shared/probeDeadline.js": "15d07b028b1ec6710278689c83f4c1bebfdf3428698ce03380fce88e61af2120",
+    "src/shared/providers/codebuddy/transcript.js": "dd666dced6b0172656a0e9fa194aaae3ca5ed17f19c65b879bce727cc8da6aa9",
+    "src/shared/providers/workbuddy/identity.js": "91ec7562134f94fa91e529452c60d9f4d9ee1d1fee70be6c265a887d307cc834",
+    "src/shared/providers/workbuddy/limits.js": "e1790eefd3ba8c38a1d18b641690eeef1458fdd4fe67f25f1ba0af322b58261d",
+    "src/shared/syncUploadInterval.js": "e28f36830fa7f61469cd353e9307089f5d84bc5b9e2e390d49c285c3fa86552b",
+    "package.json": "3e725e97b261429468972ee767b6d652a1b1c6f6fa363bec287dc192024f18b6",
+    "src/electron/providers/workbuddy/oauthLogin.js": "0d224b701241a55eb7aa15374e2c256656f55e0df1822277efaa1a7dde218b74",
+    "src/electron/providers/workbuddy/managedAccounts.js": "686602624043da8490e3bb1109d2f0dcf4d8f7a43b511c2684fa59ea28c03207",
+    "src/shared/providers/workbuddy/oauth.js": "d4e439461f74b21596e3ef5454673ff9e354a6f18775e64329f11617e92cb739"
+  },
+  "workbuddyNotes": "WorkBuddy uses CodeBuddy transcript classification and the WorkBuddy local session/billing adapter. credentialStore.js contains only the original readRegularFileNoFollow function; taskBatch/taskAttention have WorkBuddy additions. The white/green WorkBuddy head and animated facial expressions follow the user-approved preview. Web login and refresh reuse the upstream managedAccounts/oauthLogin/oauth adapters; credentials are encrypted in the independent Mac Notch profile, never shared with Token Monitor."
 }
