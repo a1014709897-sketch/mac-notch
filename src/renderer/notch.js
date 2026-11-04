@@ -48,7 +48,8 @@ async function render(data) {
   const key = JSON.stringify([tasks, showQuota, data.remainingQuota, data.quotas, data.settings?.swapGestures]);
   const layoutKey = JSON.stringify([key, data.expanded, Boolean(data.notification),
     data.tasks, data.geometry?.centerX, data.geometry?.gap, data.geometry?.height, data.geometry?.y,
-    (data.expanded || data.notification || data.collapse) ? data.frame : null, data.collapse?.id]);
+    // Dock/display changes can replace a retained compact host while content stays identical.
+    data.frame, data.collapse?.id]);
   if (layoutKey === lastLayoutKey) return;
   lastLayoutKey = layoutKey;
   const revision = ++renderRevision;

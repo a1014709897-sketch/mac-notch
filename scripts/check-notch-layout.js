@@ -10,7 +10,7 @@ fs.mkdirSync(output,{recursive:true});
 app.setPath('userData',fs.mkdtempSync(path.join(os.tmpdir(),'mac-notch-layout-profile-')));
 app.whenReady().then(async()=>{
   const display=screen.getPrimaryDisplay();
-  let base, geometry, current;
+  let base, geometry, current, hostOverride;
   const win=new BrowserWindow({show:false,width:320,height:32,frame:false,transparent:true,type:'panel',
     enableLargerThanScreen:true,roundedCorners:false,hasShadow:false,focusable:false,
     webPreferences:{preload:path.resolve('src/main/preload.js'),contextIsolation:true,sandbox:true}});
@@ -20,7 +20,7 @@ app.whenReady().then(async()=>{
   ipcMain.handle('state:get',()=>new Promise(()=>{}));
   ipcMain.handle('notch:measure',(_event,measurement)=>{
     geometry=contentLayout(base,measurement);
-    const g=current.expanded ? expandedLayout(display,geometry) : current.notification ? notificationLayout(display,geometry) : geometry;
+    const g=hostOverride || (current.expanded ? expandedLayout(display,geometry) : current.notification ? notificationLayout(display,geometry) : geometry);
     win.setBounds({x:g.x,y:g.y,width:g.width,height:g.height});
     return {geometry,frame:win.getBounds()};
   });
@@ -118,6 +118,19 @@ app.whenReady().then(async()=>{
     assert.deepEqual(get('return-waiting').bounds,get('codex-waiting').bounds);
     assert.deepEqual(get('return-waiting').regions,get('codex-waiting').regions);
   }
+  // Dock activation can reset a retained wide compact host without changing tasks.
+  base=layout(display,null);
+  current={tasks:[task('codex')],geometry:base,settings:{idleQuota:true},remainingQuota:{codex:89},quotas:{},expanded:false,notification:null};
+  hostOverride={x:Math.round(base.centerX-340),y:base.y,width:680,height:432};
+  current.frame=hostOverride;
+  await win.webContents.executeJavaScript(`render(${JSON.stringify(current)})`);
+  hostOverride=null;
+  win.setBounds({x:geometry.x,y:geometry.y,width:geometry.width,height:geometry.height});
+  current={...current,geometry,frame:win.getBounds()};
+  await win.webContents.executeJavaScript(`render(${JSON.stringify(current)})`);
+  const reset=await win.webContents.executeJavaScript(`({left:root.getBoundingClientRect().left,right:root.getBoundingClientRect().right,width:innerWidth})`);
+  assert.equal(reset.left,0,'compact host reset must rebase the header');
+  assert.ok(reset.right<=reset.width,'compact header must fit after Dock activation');
   assert.deepEqual(errors,[]);
   fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(records,null,2));
   console.log(JSON.stringify({ok:true,cases:records.length,output,widths:records.filter(r=>['codex-100','codex-28','codex-8','codex-off','dual-8-100','dual-off'].includes(r.name)).map(r=>({gap:r.gap,name:r.name,width:r.geometry.width}))}));

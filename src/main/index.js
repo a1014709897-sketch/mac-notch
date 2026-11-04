@@ -361,6 +361,7 @@ function updateTray(provider) {
   );
 }
 const queuedQuotaProviders = new Set();
+let claudeRetryTimer, claudeTransientFailures = 0;
 async function refreshQuotas(providers = quotaProviders()) {
   if (quotalock) {
     for (const provider of providers) queuedQuotaProviders.add(provider);
@@ -385,20 +386,36 @@ async function refreshQuotas(providers = quotaProviders()) {
         else if (Date.now() < (quotas[provider].retryAfter || 0)) return;
         else
           try {
+            if (provider === "claude") clearTimeout(claudeRetryTimer);
             quotas[provider] = await readQuota(
               provider,
               transport.fetch.bind(transport),
               store.cookie(),
             );
+            if (provider === "claude") claudeTransientFailures = 0;
           } catch (e) {
+            // Retry transient Claude transport/server failures twice without increasing idle polling.
+            const transient = provider === "claude" && (e.status >= 500 ||
+              /net::|fetch failed|network|timed?\s*out|timeout/i.test(e.message) ||
+              ["TimeoutError", "AbortError"].includes(e.name));
+            const quickRetry = transient && ++claudeTransientFailures <= 2;
+            if (provider === "claude" && !transient) claudeTransientFailures = 0;
+            const retryDelay = quickRetry ? (claudeTransientFailures === 1 ? 15000 : 45000)
+              : e.status === 429 ? 300000 : 120000;
             quotas[provider] = {
               ...quotas[provider],
               error: e.message.startsWith("net::")
                 ? "网络连接失败，请检查代理"
                 : e.message,
               stale: quotas[provider].windows.length > 0,
-              retryAfter: Date.now() + (e.status === 429 ? 300000 : 120000),
+              retryAfter: Date.now() + retryDelay,
             };
+            if (quickRetry) {
+              claudeRetryTimer = setTimeout(() => {
+                if (!app.isQuitting && !locked) void refreshQuotas(["claude"]);
+              }, retryDelay + 50);
+              claudeRetryTimer.unref();
+            }
           }
         updateTray(provider);
       }),
@@ -769,6 +786,7 @@ app.on("before-quit", () => {
   cancelCollapse();
   clearInterval(scanTimer);
   clearInterval(quotaTimer);
+  clearTimeout(claudeRetryTimer);
   clearInterval(attentionTimer);
   clearInterval(notificationTimer);
   clearTimeout(updateReminderStart);
