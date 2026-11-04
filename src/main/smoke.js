@@ -458,7 +458,7 @@ module.exports = async function smoke({
       );
     const liveSettingsChecks = [];
     async function changeSetting(id, checked) {
-      await panel.webContents.executeJavaScript(`(() => {const input=document.getElementById(${JSON.stringify(id)});if(input.checked!==${checked})input.click();})()`);
+      await panel.webContents.executeJavaScript(`(() => {const input=document.getElementById(${JSON.stringify(id)});if(input.checked!==${checked})input.click();return queue;})()`);
       await wait();
     }
     const notificationToggleChecks = [];
@@ -483,7 +483,7 @@ module.exports = async function smoke({
     liveSettingsChecks.push(!store.public().providers.codex && trays.size===Object.values(store.public().menuBar).filter(Boolean).length && trays.has("codex") && payload().tasks.every(t=>t.provider==="claude") && panel.isVisible());
     await changeSetting("claude", false);
     liveSettingsChecks.push(!notch.isVisible() && payload().tasks.length===0 && panel.isVisible());
-    await panel.webContents.executeJavaScript(`document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('codex').click();`);
+    await panel.webContents.executeJavaScript(`document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('claude').click();document.getElementById('codex').click();queue;`);
     await wait();
     liveSettingsChecks.push(store.public().providers.claude && store.public().providers.codex && trays.size===Object.values(store.public().menuBar).filter(Boolean).length);
     const usageBeforeDisplayChange = payload().usage;

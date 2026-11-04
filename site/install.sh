@@ -6,8 +6,8 @@ set -euo pipefail
 
 main() {
   local version="0.2.10"
-  local arm64_checksum="76c63d51a64f9f312ee55415782f1c0e02fb0f607e784a37e7d4b4ca1996edeb"
-  local x64_checksum="6aab8d208bf7b8ba52b48ead483a6eafa4229685bf454b6a8c354c13b039e1c7"
+  local arm64_checksum="a071bf22d93a421c02090035f3162e619bae4a3ca9bcb905b0897c3ad9d2c195"
+  local x64_checksum="baa25024087056335a651125783e8c716cd23baa240367c16bb5f386d9a43492"
   local architecture checksum url
   local bundle_id="io.github.a1014709897-sketch.macnotch"
   local verify_only=0
