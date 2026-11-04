@@ -340,7 +340,8 @@ module.exports = async function smoke({
           closing:document.body.classList.contains('closing-notification'),
           visible:getComputedStyle(root).visibility!=='hidden',
           clip:getComputedStyle(document.querySelector('#surface')).clipPath});
-        if(performance.now()-start<380) requestAnimationFrame(sample); else resolve(frames);
+        const elapsed=performance.now()-start;
+        if(elapsed<1500 && (elapsed<380 || document.body.classList.contains('closing-notification'))) requestAnimationFrame(sample); else resolve(frames);
       }
       sample(); document.querySelector('#notification-close').click();
     })`);
