@@ -25,7 +25,7 @@ const { readQuota, remaining } = require("./quotas");
 const { NotificationQueue, sessionURL } = require("./notifications");
 const notifications = new NotificationQueue();
 const { createUpdater } = require("./updates");
-let updater;
+let updater, updateReminder, updateReminderTimer, updateReminderStart;
 const { contentLayout, contentKey, layout, expandedLayout, notificationLayout } = require("./layout");
 const { Worker } = require("node:worker_threads");
 const { summarize } = require("./usage");
@@ -476,6 +476,20 @@ app.whenReady().then(async () => {
   updater = createUpdater({ version: app.getVersion(), arch: updateArch,
     fetch: (...args) => transport.fetch(...args), directory: path.join(app.getPath("userData"), "updates"),
     openPath: file => shell.openPath(file), onChange: () => render() });
+  if (app.isPackaged && !isolated) {
+    updateReminder = require('./update-reminder').createUpdateReminder({
+      updater, file: path.join(app.getPath('userData'), 'update-reminders.json'),
+      canPrompt: () => !locked && !app.isQuitting,
+      showSettings,
+      prompt: async update => (await dialog.showMessageBox(
+        require('./update-dialog').updateDialogOptions(update, app.getVersion())
+      )).response,
+      showError: error => dialog.showMessageBox({ type: 'warning', title: 'Mac Notch 更新未完成',
+        message: '更新未完成，当前版本仍可继续使用', detail: String(error || '请稍后在设置中重试。'), buttons: ['知道了'] }),
+    });
+    updateReminderStart = setTimeout(() => void updateReminder.tick(), 30000);
+    updateReminderTimer = setInterval(() => void updateReminder.tick(), 6 * 60 * 60 * 1000);
+  }
   const webPreferences = {
     preload: path.join(__dirname, "preload.js"),
     contextIsolation: true,
@@ -757,6 +771,9 @@ app.on("before-quit", () => {
   clearInterval(quotaTimer);
   clearInterval(attentionTimer);
   clearInterval(notificationTimer);
+  clearTimeout(updateReminderStart);
+  clearInterval(updateReminderTimer);
+  updateReminder?.dispose();
   updater?.dispose();
   usageWorker?.terminate();
 });

@@ -78,7 +78,7 @@ function renderUpdate(update) {
   $("release-notes").hidden = !update.notes;
   $("release-notes-text").textContent = update.notes || "";
   $("update-status").textContent = {
-    idle: `当前版本 v${update.current}，可手动检查更新。`, checking: "正在检查更新…",
+    idle: `当前版本 v${update.current}；会自动检查新版，也可手动检查。`, checking: "正在检查更新…",
     current: `当前 v${update.current} 已是所选渠道的最新版本。`,
     available: `发现新版本 v${update.version}，可下载安装包。`,
     downloading: `正在下载 v${update.version} · ${update.progress || 0}%`,
