@@ -42,8 +42,29 @@ function selectRelease(releases, current, arch) {
   assetURL(asset.browser_download_url);
   return { release, asset, version };
 }
+// Only manage files created by this updater, inside its private cache.
+function pruneInstallers(directory, keep) {
+  let entries;
+  try { entries = fs.readdirSync(directory, { withFileTypes: true }); }
+  catch (error) { if (error.code === 'ENOENT') return; throw error; }
+  const installers = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const match = /^Mac-Notch-(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)-(arm64|x64)\.dmg(\.partial)?$/.exec(entry.name);
+    if (!match) continue;
+    if (match[3]) fs.unlinkSync(path.join(directory, entry.name));
+    else installers.push({ name: entry.name, version: match[1] });
+  }
+  installers.sort((a, b) => compareVersions(b.version, a.version) || a.name.localeCompare(b.name));
+  const retained = keep || installers[0]?.name;
+  for (const installer of installers) {
+    if (installer.name !== retained) fs.unlinkSync(path.join(directory, installer.name));
+  }
+}
 function createUpdater({ version, arch, fetch, directory, openPath, onChange = () => {} }) {
   let state = { status: 'idle', current: version }, selected, downloaded, busy = false, controller;
+  // Cleanup failures must not prevent the application from starting. A download retries cleanup.
+  try { pruneInstallers(directory); } catch {}
   const emit = patch => { state = { ...state, ...patch }; onChange({ ...state }); };
   async function request(url, timeout = 20000) {
     const response = await fetch(url, { headers: { Accept: 'application/vnd.github+json' }, credentials: 'omit', signal: AbortSignal.any([controller.signal, AbortSignal.timeout(timeout)]) });
@@ -100,6 +121,7 @@ function createUpdater({ version, arch, fetch, directory, openPath, onChange = (
         await pipeline(Readable.from(response.body), meter, fs.createWriteStream(temporary, { mode: 0o600 }), { signal: controller.signal });
         if (received !== asset.size || hash.digest('hex') !== digest) throw new Error('安装包校验失败，请重新下载');
         fs.renameSync(temporary, destination); downloaded = destination;
+        pruneInstallers(directory, asset.name);
         emit({ status: 'downloaded', progress: 100 });
       } catch (error) {
         if (temporary) fs.rmSync(temporary, { force: true });

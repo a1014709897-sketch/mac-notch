@@ -503,8 +503,8 @@ app.whenReady().then(async () => {
   notch.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   protect(notch);
   panel = new BrowserWindow({
-    width: 400,
-    height: 720,
+    width: Math.min(520, screen.getPrimaryDisplay().workArea.width - 32),
+    height: Math.min(820, screen.getPrimaryDisplay().workArea.height - 32),
     show: false,
     titleBarStyle: "hiddenInset",
     title: "Mac Notch · 设置",
@@ -515,6 +515,13 @@ app.whenReady().then(async () => {
     webPreferences,
   });
   protect(panel);
+  panel.on("show", () => {
+    app.dock.show().then(() => {
+      if (!panel.isDestroyed() && panel.isVisible() && !app.isQuitting) panel.focus();
+      else if (!app.isQuitting) app.dock.hide();
+    }).catch(() => {});
+  });
+  panel.on("hide", () => { if (!app.isQuitting) app.dock.hide(); });
   notch.on("blur", () => {
     if (expanded && !smoke) setExpanded(false);
   });

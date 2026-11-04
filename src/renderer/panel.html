@@ -58,10 +58,19 @@
           <legend>显示方式</legend>
           <label><input id="idle-quota" type="checkbox" role="switch" checked /> 刘海条空闲时显示剩余额度</label>
           <small>图标＋剩余百分比；有任务时优先显示任务状态。</small>
+          <div class="quota-comparison" aria-label="空闲额度显示前后对比">
+            <figure><figcaption>关闭 · 只显示工具图标</figcaption><img src="../../assets/idle-quota-off.png" alt="关闭后：空闲刘海条仅显示 Claude 和 Codex 图标。" /></figure>
+            <figure><figcaption>开启 · 显示剩余额度</figcaption><img src="../../assets/idle-quota-on.png" alt="开启后：工具图标旁显示演示剩余额度 72% 和 59%。" /></figure>
+            <p>示意额度，实际数值以账号查询结果为准。</p>
+          </div>
           <label><input id="menu-claude" type="checkbox" role="switch" /> 菜单栏显示 Claude</label>
           <label><input id="menu-codex" type="checkbox" role="switch" /> 菜单栏显示 Codex</label>
           <label><input id="menu-workbuddy" type="checkbox" role="switch" /> 菜单栏显示 WorkBuddy</label>
           <small>菜单栏可同时显示三个工具，与刘海条开关独立；打开 Mac Notch 应用可返回设置。</small>
+          <figure class="menu-bar-preview">
+            <img src="../../assets/menu-bar-preview.svg" alt="屏幕右上角菜单栏示意：Claude 72%、Codex 59%、WorkBuddy 99%，位于 Wi-Fi、电池和时间左侧。" />
+            <figcaption>右上角菜单栏效果示意；额度与排列位置以实际显示为准。</figcaption>
+          </figure>
         </fieldset>
         <fieldset class="display-settings">
           <legend>刘海条操作</legend>

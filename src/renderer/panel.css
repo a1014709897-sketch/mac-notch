@@ -159,3 +159,13 @@ button:focus-visible, summary:focus-visible { outline: 2px solid #8cb99f; outlin
 .workbuddy-login { margin:4px 0 12px; color:#aebbb3; }
 .workbuddy-login small { display:block; margin:5px 0; }
 .workbuddy-login [hidden] { display:none; }
+
+.quota-comparison { margin: 12px 0 16px 23px; padding: 12px; background: #202527; border: 1px solid #303836; border-radius: 12px; }
+.quota-comparison figure { margin: 0 0 10px; }
+.quota-comparison figcaption { color: #c6d0ca; font-size: 11px; }
+.quota-comparison img { display: block; width: 100%; max-width: 360px; height: auto; margin: 6px auto 0; }
+.quota-comparison p { margin: 0; color: #97a29c; font-size: 10px; }
+
+.menu-bar-preview { margin: 12px 0 16px 23px; }
+.menu-bar-preview img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.menu-bar-preview figcaption { margin-top: 7px; color: #97a29c; font-size: 10px; }

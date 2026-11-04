@@ -42,3 +42,28 @@ test('offline and checksum failures remain failures, never latest or downloaded'
     fetch:async target=>new Response(target.includes('api.github.com')?JSON.stringify([r]):target.endsWith('.txt')?`${digest}  Mac-Notch-0.3.0-arm64.dmg\n`:bytes)});
   await updater.check();assert.equal((await updater.download()).status,'downloaded');
 });
+
+test('startup bounds legacy cache and clears interrupted downloads without touching unrelated files', t => {
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'mac-notch-update-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+  const names=['Mac-Notch-0.9.0-arm64.dmg','Mac-Notch-0.10.0-arm64.dmg','Mac-Notch-0.11.0-x64.dmg.partial','notes.txt','other.dmg'];
+  for (const name of names) fs.writeFileSync(path.join(directory,name),bytes);
+  fs.mkdirSync(path.join(directory,'Mac-Notch-0.1.0-arm64.dmg'));
+  createUpdater({version:'0.2.1',arch:'arm64',directory});
+  assert.deepEqual(fs.readdirSync(directory).sort(),['Mac-Notch-0.1.0-arm64.dmg','Mac-Notch-0.10.0-arm64.dmg','notes.txt','other.dmg'].sort());
+});
+test('failed upgrade keeps previous installer; successful upgrade and retry retain only one', async t => {
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'mac-notch-update-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+  const old='Mac-Notch-0.2.2-arm64.dmg', next='Mac-Notch-0.3.0-arm64.dmg';
+  fs.writeFileSync(path.join(directory,old),bytes);
+  let corrupt=true;
+  const updater=createUpdater({version:'0.2.1',arch:'arm64',directory,
+    fetch:async target=>new Response(target.includes('api.github.com')?JSON.stringify([release()]):corrupt?Buffer.from('bad'):bytes)});
+  await updater.check();
+  assert.equal((await updater.download()).status,'error');
+  assert.deepEqual(fs.readdirSync(directory),[old]);
+  corrupt=false;
+  assert.equal((await updater.download()).status,'downloaded');
+  assert.deepEqual(fs.readdirSync(directory),[next]);
+  await updater.check();await updater.download();
+  assert.deepEqual(fs.readdirSync(directory),[next]);
+});

@@ -530,7 +530,7 @@ module.exports = async function smoke({
     assistanceChecks.push(!notifications.current);
     state.sessions.clear(); notifications.clear(); syncNotification();
     panel.show();
-    const previewChecks = await panel.webContents.executeJavaScript(`({loaded:[...document.querySelectorAll('.notification-option img')].every(img=>img.complete&&img.naturalWidth>0),scrollable:document.querySelector('main').scrollHeight>document.querySelector('main').clientHeight})`);
+    const previewChecks = await panel.webContents.executeJavaScript(`({loaded:[...document.querySelectorAll('.notification-option img, .quota-comparison img')].every(img=>img.complete&&img.naturalWidth>0),scrollable:document.querySelector('main').scrollHeight>document.querySelector('main').clientHeight})`);
     if (out) {
       await panel.webContents.executeJavaScript(`document.querySelector('main').scrollTop=0`); await wait();
       fs.writeFileSync(path.join(out,"settings-top.png"),(await panel.webContents.capturePage()).toPNG());
