@@ -1,6 +1,23 @@
 "use strict";
 const { execFile } = require("node:child_process");
 
+const focusClaude = `
+  ObjC.import('AppKit');
+  ObjC.import('CoreGraphics');
+  function run() {
+    const app = $.NSRunningApplication.runningApplicationsWithBundleIdentifier('com.anthropic.claudefordesktop').firstObject;
+    if (app.isNil()) return 'open';
+    if (!app.active && !app.activateWithOptions(2)) return 'open';
+    // A closed or minimized last window needs the normal Dock reopen action.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const windows = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(17, 0)));
+      if (windows.some(w => w.kCGWindowOwnerPID === app.processIdentifier && w.kCGWindowLayer === 0)) return 'focused';
+      delay(0.1);
+    }
+    return 'open';
+  }
+`;
+
 const tools = {
   workbuddy: { name: "WorkBuddy", bundle: "com.tencent.workbuddy.mac" },
   claude: { name: "Claude", bundle: "com.anthropic.claudefordesktop" },
@@ -18,6 +35,14 @@ function createToolLauncher({ execute = execFile, showMessageBox, now = Date.now
     const tool = tools[provider];
     pending.add(provider);
     try {
+      if (provider === "claude" && !url) {
+        const focused = await new Promise(resolve => {
+          execute("/usr/bin/osascript", ["-l", "JavaScript", "-e", focusClaude], { timeout: 3000 }, (error, result) => {
+            resolve(!error && result?.trim() === "focused");
+          });
+        });
+        if (focused) return true;
+      }
       // The Promise also catches synchronous spawn errors such as EPERM.
       await new Promise((resolve, reject) => {
         const args = ["-b", tool.bundle];

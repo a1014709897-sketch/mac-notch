@@ -82,7 +82,8 @@ test("successful app and session launches use fixed bundles, with no notice; unk
   assert.equal(await open("claude"), true);
   assert.equal(await open("codex", "codex://threads/test-session"), true);
   for (const provider of ["unknown", "toString", "__proto__"]) assert.equal(await open(provider), false);
-  assert.deepEqual(calls, [
+  assert.equal(calls[0][0], "/usr/bin/osascript");
+  assert.deepEqual(calls.slice(1), [
     ["/usr/bin/open", ["-b", "com.anthropic.claudefordesktop"]],
     ["/usr/bin/open", ["-b", "com.openai.codex", "codex://threads/test-session"]],
   ]);
@@ -131,4 +132,15 @@ test('WorkBuddy launch uses the installed official bundle identifier', async () 
   const open = createToolLauncher({execute(_file,value,_options,callback){args=value;callback(null);}});
   assert.equal(await open('workbuddy'),true);
   assert.deepEqual(args,['-b','com.tencent.workbuddy.mac']);
+});
+
+
+test("Claude shortcut focuses its current window and a notification still opens its session URL", async () => {
+  const calls = [];
+  const open = createToolLauncher({
+    execute(file, args, options, callback) { calls.push(file); callback(null, "focused\n"); },
+  });
+  assert.equal(await open("claude"), true);
+  assert.equal(await open("claude", "claude://claude.ai/claude-code-desktop/local_test"), true);
+  assert.deepEqual(calls, ["/usr/bin/osascript", "/usr/bin/open"]);
 });
